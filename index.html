@@ -1,0 +1,3357 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>パーソナルワールドカップ 〜チーム対抗人となりW杯〜</title>
+<!-- Firebase SDK (Realtime Database) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  window._fb = { initializeApp, getDatabase, ref, set, get, onValue, update, remove };
+  window.dispatchEvent(new CustomEvent("firebase-ready"));
+</script>
+<style>
+/* =========================================================
+   ベースカラー & 基本
+   ========================================================= */
+:root{
+  --green-deep:#0a6b3b;
+  --green:#13994f;
+  --green-light:#1ebd62;
+  --pitch-a:#0e7a43;
+  --pitch-b:#13994f;
+  --gold:#f5c518;
+  --gold-deep:#c89a0b;
+  --blue:#1d4ed8;
+  --blue-deep:#0b2a6b;
+  --red:#dc2626;
+  --white:#ffffff;
+  --cream:#fff9e6;
+  --ink:#0c1b25;
+  --shadow:0 6px 18px rgba(0,0,0,.18);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255,255,255,.12), transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(255,255,255,.08), transparent 40%),
+    linear-gradient(135deg, var(--green-deep), var(--green) 50%, var(--green-deep));
+  min-height:100vh;
+  font-size:16px;
+}
+button{font-family:inherit;}
+
+/* =========================================================
+   ヘッダー
+   ========================================================= */
+header.scoreboard{
+  background:linear-gradient(180deg,#081a2a,#0b2a6b 70%,#1d4ed8);
+  color:#fff;
+  padding:16px 24px;
+  border-bottom:6px solid var(--gold);
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+  position:relative;overflow:hidden;
+}
+header.scoreboard::before{
+  content:"";position:absolute;inset:0;
+  background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.04) 0 2px, transparent 2px 18px);
+  pointer-events:none;
+}
+.scoreboard-inner{
+  display:flex;align-items:center;gap:18px;
+  max-width:1600px;margin:0 auto;position:relative;z-index:1;
+}
+.trophy{font-size:42px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));}
+.title-block h1{
+  margin:0;font-size:26px;letter-spacing:.05em;
+  text-shadow:0 2px 0 #000, 0 0 12px rgba(245,197,24,.5);
+}
+.title-block .sub{margin-top:2px;font-size:13px;color:#ffe89a;letter-spacing:.15em;}
+.title-accent{color:var(--gold);}
+
+/* =========================================================
+   タブ
+   ========================================================= */
+nav.tabs{
+  background:#fff;
+  border-bottom:4px solid var(--green-deep);
+  box-shadow:var(--shadow);
+  position:sticky;top:0;z-index:50;
+}
+.tabs-inner{
+  max-width:1600px;margin:0 auto;display:flex;flex-wrap:wrap;
+}
+.tab-btn{
+  flex:1;min-width:120px;
+  padding:14px 8px;border:none;background:transparent;cursor:pointer;
+  font-size:15px;font-weight:bold;color:#444;
+  border-bottom:5px solid transparent;transition:.2s;
+}
+.tab-btn:hover{background:#f1faf4;color:var(--green-deep);}
+.tab-btn.active{
+  color:var(--green-deep);border-bottom-color:var(--gold);
+  background:linear-gradient(180deg,transparent,#eafbe6);
+}
+
+/* =========================================================
+   メイン共通
+   ========================================================= */
+main{max-width:1600px;margin:0 auto;padding:24px;}
+.panel{
+  background:#fff;border-radius:14px;padding:24px;
+  box-shadow:var(--shadow);margin-bottom:24px;
+  border-top:6px solid var(--green);
+}
+.panel h2{
+  margin:0 0 18px;font-size:22px;color:var(--green-deep);
+  display:flex;align-items:center;gap:10px;
+  border-bottom:3px dashed var(--gold);padding-bottom:10px;
+}
+.panel h2 .badge{
+  background:var(--gold);color:#000;padding:2px 12px;border-radius:6px;font-size:13px;
+}
+.panel h3{
+  color:var(--blue-deep);margin:20px 0 10px;font-size:17px;
+  border-left:6px solid var(--gold);padding-left:10px;
+}
+
+/* フォーム */
+.form-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px;}
+.field{display:flex;flex-direction:column;min-width:160px;flex:1;}
+.field label{font-size:13px;color:#555;margin-bottom:4px;font-weight:bold;}
+input[type="text"], input[type="number"], select, textarea{
+  padding:10px 12px;border:2px solid #ccd6dd;border-radius:8px;
+  font-size:15px;font-family:inherit;background:#fff;transition:.15s;
+}
+input:focus, select:focus, textarea:focus{
+  outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(30,189,98,.25);
+}
+textarea{resize:vertical;min-height:50px;}
+
+/* ボタン */
+.btn{
+  padding:10px 18px;border:none;border-radius:8px;
+  font-size:15px;font-weight:bold;cursor:pointer;
+  transition:.15s;box-shadow:0 3px 0 rgba(0,0,0,.15);
+}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.15);}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-primary:hover{background:var(--green-light);}
+.btn-gold{background:var(--gold);color:#000;}
+.btn-gold:hover{background:#ffd84a;}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-blue:hover{background:#3361e3;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-danger:hover{background:#ef4444;}
+.btn-ghost{background:#e8eef1;color:#333;}
+.btn-ghost:hover{background:#d8e0e5;}
+.btn-small{padding:6px 12px;font-size:13px;box-shadow:0 2px 0 rgba(0,0,0,.15);}
+.btn-large{padding:16px 32px;font-size:20px;}
+
+/* テーブル */
+table{
+  width:100%;border-collapse:collapse;background:#fff;
+  border-radius:8px;overflow:hidden;margin-top:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+th{
+  background:linear-gradient(180deg,var(--green-deep),var(--green));
+  color:#fff;padding:10px 8px;text-align:center;font-size:14px;
+}
+td{padding:8px;text-align:center;border-bottom:1px solid #e8eef1;font-size:14px;vertical-align:middle;}
+tr:nth-child(even) td{background:#f7fbf7;}
+tr:hover td{background:#eafbe6;}
+.ok{color:var(--green-deep);font-weight:bold;}
+.ng{color:var(--red);font-weight:bold;}
+
+.empty{
+  padding:24px;text-align:center;color:#888;
+  background:#f7fbf7;border-radius:10px;border:2px dashed #c5d8cb;
+}
+.hint{color:#666;font-size:13px;margin:4px 0 0;}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.tag{display:inline-block;background:var(--green);color:#fff;padding:2px 8px;border-radius:6px;font-size:12px;}
+.warn{background:#fff3cd;border:2px solid #f5c518;color:#7a5300;padding:10px 14px;border-radius:8px;}
+.warn-strong{background:#fde2e2;border:2px solid var(--red);color:#7a1d1d;padding:10px 14px;border-radius:8px;}
+
+section.tab-content{display:none;}
+section.tab-content.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* =========================================================
+   ダッシュボード
+   ========================================================= */
+.dash-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:16px;
+}
+.dash-card{
+  background:#fff;border-radius:14px;padding:18px;
+  box-shadow:var(--shadow);border-top:6px solid var(--blue);
+}
+.dash-card.green{border-top-color:var(--green);}
+.dash-card.gold{border-top-color:var(--gold);}
+.dash-card h3{
+  margin:0 0 10px;color:var(--blue-deep);font-size:16px;
+  display:flex;align-items:center;gap:8px;
+}
+.dash-card ul{margin:0;padding:0;list-style:none;}
+.dash-card li{padding:6px 0;border-bottom:1px dashed #e8eef1;font-size:14px;}
+.dash-card li:last-child{border-bottom:none;}
+.team-flag{font-size:20px;margin-right:4px;}
+
+/* =========================================================
+   問題作成
+   ========================================================= */
+.q-list-item{
+  display:flex;gap:10px;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:#f7fbf7;border-radius:8px;
+  border:1px solid #d9e5dd;margin-bottom:6px;
+}
+.q-list-item .qtxt{flex:1;text-align:left;font-weight:bold;}
+.q-list-item .qmeta{color:#666;font-size:13px;}
+.choice-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+}
+.choice-grid .field label{font-size:14px;}
+.team-progress{
+  display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;
+}
+.team-progress .pill{
+  background:#fff;padding:8px 14px;border-radius:20px;
+  border:2px solid #d9e5dd;font-weight:bold;
+}
+.team-progress .pill.done{background:var(--gold);border-color:var(--gold-deep);color:#000;}
+
+/* =========================================================
+   試合設定
+   ========================================================= */
+.match-card{
+  background:#fff;border-radius:12px;padding:16px;
+  border:2px solid #e8eef1;margin-bottom:14px;
+}
+.match-card .match-head{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.match-card .match-name{font-size:20px;font-weight:bold;color:var(--green-deep);}
+.match-card .status{
+  padding:4px 12px;border-radius:14px;font-size:13px;font-weight:bold;
+}
+.status.notstarted{background:#e8eef1;color:#555;}
+.status.ongoing{background:var(--gold);color:#000;animation:blink 1.5s infinite;}
+.status.finished{background:var(--green);color:#fff;}
+@keyframes blink{50%{opacity:.7;}}
+
+/* =========================================================
+   投影モード
+   ========================================================= */
+.projector{
+  position:fixed;inset:0;z-index:9999;display:none;
+  background:
+    radial-gradient(ellipse at top, #1e5a8a 0%, #0b2a6b 40%, #061830 100%);
+  color:#fff;overflow:hidden;
+}
+.projector.active{display:flex;flex-direction:column;}
+.projector::before{
+  /* スタジアム照明 */
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 600px 200px at 20% 0%, rgba(255,255,200,.25), transparent 70%),
+    radial-gradient(ellipse 600px 200px at 80% 0%, rgba(255,255,200,.25), transparent 70%),
+    radial-gradient(ellipse 800px 300px at 50% 100%, rgba(30,189,98,.3), transparent 70%);
+  pointer-events:none;
+}
+.projector::after{
+  /* ピッチ縞 */
+  content:"";position:absolute;left:0;right:0;bottom:0;height:30%;
+  background:repeating-linear-gradient(90deg,
+    var(--pitch-a) 0 80px, var(--pitch-b) 80px 160px);
+  opacity:.4;pointer-events:none;
+}
+.proj-top{
+  position:relative;z-index:2;flex:0 0 auto;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 30px;border-bottom:4px solid var(--gold);
+  background:rgba(0,0,0,.4);
+}
+.proj-match-info{display:flex;align-items:center;gap:20px;}
+.proj-match-name{
+  font-size:28px;font-weight:bold;color:var(--gold);
+  text-shadow:0 2px 0 #000;
+}
+.proj-vs{font-size:22px;}
+.proj-vs .team-name{font-weight:bold;}
+.proj-vs .score{
+  display:inline-block;background:var(--gold);color:#000;
+  padding:4px 16px;border-radius:8px;font-size:28px;margin:0 8px;
+  font-weight:900;min-width:60px;text-align:center;
+}
+.proj-close{
+  background:var(--red);color:#fff;border:none;padding:10px 18px;
+  border-radius:8px;cursor:pointer;font-weight:bold;font-size:15px;
+}
+
+.proj-body{
+  position:relative;z-index:2;padding:24px 40px;
+  display:flex;flex-direction:column;gap:14px;
+  flex:1 1 auto;min-height:0;overflow-y:auto;
+}
+.proj-qmeta{
+  display:flex;gap:14px;align-items:center;flex-wrap:wrap;
+  font-size:18px;
+}
+.proj-qmeta .chip{
+  background:rgba(255,255,255,.15);padding:6px 16px;border-radius:20px;
+  border:2px solid rgba(255,255,255,.3);
+}
+.proj-qmeta .chip.quizteam{background:var(--blue);border-color:var(--gold);}
+.proj-qmeta .chip.member{background:var(--gold);color:#000;border-color:#fff;font-weight:bold;}
+.proj-question{
+  background:rgba(255,255,255,.95);color:var(--ink);
+  border-radius:16px;padding:20px 28px;
+  font-size:30px;font-weight:bold;line-height:1.4;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  border:4px solid var(--gold);
+  text-align:center;
+}
+.proj-choices{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:14px;flex:1 1 auto;min-height:0;
+}
+.proj-choice{
+  background:rgba(255,255,255,.92);color:var(--ink);
+  border-radius:16px;padding:16px 20px;
+  display:flex;align-items:center;gap:16px;
+  font-size:24px;font-weight:bold;
+  border:4px solid transparent;
+  box-shadow:0 6px 16px rgba(0,0,0,.3);
+  transition:.3s;
+  position:relative;
+  min-height:80px;
+}
+.proj-choice .letter{
+  width:56px;height:56px;border-radius:50%;
+  background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;flex-shrink:0;
+  box-shadow:0 4px 8px rgba(0,0,0,.3);
+}
+.proj-choice.correct{
+  background:linear-gradient(135deg,#ffe066,#f5c518);
+  border-color:#fff;
+  animation:correctPulse 1.2s ease infinite alternate;
+}
+.proj-choice.correct .letter{background:var(--green-deep);}
+.proj-choice.user-selected{
+  border-color:var(--blue);
+}
+.proj-choice.user-wrong{
+  background:#fde2e2;
+  border-color:var(--red);
+}
+.proj-choice .user-tag{
+  position:absolute;right:14px;top:-12px;
+  background:var(--blue);color:#fff;padding:4px 12px;border-radius:14px;
+  font-size:14px;
+}
+@keyframes correctPulse{
+  from{transform:scale(1);box-shadow:0 6px 16px rgba(0,0,0,.3);}
+  to{transform:scale(1.03);box-shadow:0 12px 32px rgba(245,197,24,.7);}
+}
+
+.proj-controls{
+  position:relative;z-index:3;flex:0 0 auto;
+  display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;
+  background:rgba(0,0,0,.7);padding:12px 24px;
+  border-top:3px solid var(--gold);
+  max-height:40vh;overflow-y:auto;
+}
+.proj-controls .field{min-width:130px;}
+.proj-controls .field label{color:#ffe89a;font-size:12px;}
+.proj-controls select, .proj-controls input{
+  background:#fff;font-size:14px;padding:7px 10px;
+}
+.proj-controls .btn{font-size:15px;padding:8px 14px;}
+
+/* 演出 */
+.verdict{
+  position:fixed;inset:0;z-index:10000;
+  display:none;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.verdict.show{display:flex;animation:fadeInBg .4s ease;}
+.verdict-text{
+  font-size:140px;font-weight:900;letter-spacing:.05em;
+  text-align:center;line-height:1;
+  text-shadow:0 0 30px rgba(255,255,255,.6), 0 8px 0 #000;
+  animation:verdictPop .5s cubic-bezier(.2,1.6,.4,1);
+}
+.verdict.correct .verdict-text{
+  color:var(--gold);
+  text-shadow:0 0 40px #f5c518, 0 0 80px #ff8800, 0 8px 0 #000;
+}
+.verdict.wrong .verdict-text{
+  color:#ff6b6b;
+  text-shadow:0 0 40px #dc2626, 0 8px 0 #000;
+}
+@keyframes verdictPop{
+  0%{transform:scale(.3) rotate(-10deg);opacity:0;}
+  60%{transform:scale(1.15) rotate(3deg);opacity:1;}
+  100%{transform:scale(1) rotate(0);opacity:1;}
+}
+@keyframes fadeInBg{from{background:rgba(0,0,0,0);}to{background:rgba(0,0,0,.55);}}
+.verdict.show{background:rgba(0,0,0,.55);}
+
+/* 紙吹雪 */
+.confetti{
+  position:fixed;inset:0;z-index:9998;pointer-events:none;
+  overflow:hidden;display:none;
+}
+.confetti.active{display:block;}
+.confetti span{
+  position:absolute;top:-20px;width:12px;height:18px;
+  animation:confettiFall linear forwards;
+}
+@keyframes confettiFall{
+  0%{transform:translateY(-20px) rotate(0);opacity:1;}
+  100%{transform:translateY(110vh) rotate(720deg);opacity:0.9;}
+}
+
+/* =========================================================
+   スコアボード
+   ========================================================= */
+.pitch-card{
+  background:repeating-linear-gradient(90deg,
+    var(--pitch-a) 0 60px, var(--pitch-b) 60px 120px);
+  border-radius:12px;padding:18px;margin-bottom:16px;
+  color:#fff;box-shadow:var(--shadow);border:3px solid #fff;
+}
+.pitch-title{
+  font-size:20px;font-weight:bold;margin-bottom:10px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  text-shadow:0 2px 4px rgba(0,0,0,.4);
+}
+.pitch-title .winner-tag{
+  background:var(--gold);color:#000;padding:4px 12px;
+  border-radius:20px;font-size:14px;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+}
+.pitch-scores{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.score-pill{
+  background:rgba(255,255,255,.92);color:var(--ink);
+  padding:8px 14px;border-radius:10px;font-weight:bold;
+  display:flex;align-items:center;gap:8px;min-width:160px;
+}
+.score-pill.winner{
+  background:var(--gold);color:#000;border:2px solid #fff;
+  box-shadow:0 0 0 3px var(--gold-deep);
+}
+.score-num{font-size:24px;color:var(--green-deep);}
+.score-pill.winner .score-num{color:#000;}
+
+/* =========================================================
+   ランキング
+   ========================================================= */
+.ranking-list{display:flex;flex-direction:column;gap:8px;}
+.rank-row{
+  display:grid;grid-template-columns:80px 1fr 160px 70px 70px 100px 90px;
+  align-items:center;padding:10px 16px;border-radius:10px;
+  background:#fff;border:2px solid #e8eef1;gap:8px;
+}
+.rank-row .rank-num{font-size:20px;font-weight:bold;}
+.rank-row .player{font-size:17px;font-weight:bold;}
+.rank-row .team{color:#666;font-size:13px;}
+.rank-row .num-cell{font-size:15px;text-align:center;color:#444;}
+.rank-row .avg{font-size:18px;font-weight:bold;color:var(--green-deep);text-align:right;}
+.rank-row .pct{font-size:14px;color:#666;text-align:right;}
+.rank-row.gold{background:linear-gradient(135deg,#fff5c2,#ffe066);border-color:var(--gold-deep);box-shadow:0 4px 14px rgba(245,197,24,.4);}
+.rank-row.gold .rank-num::before{content:"🥇 ";}
+.rank-row.silver{background:linear-gradient(135deg,#f0f3f6,#cdd6dc);border-color:#9aa3a8;}
+.rank-row.silver .rank-num::before{content:"🥈 ";}
+.rank-row.bronze{background:linear-gradient(135deg,#ffd9b4,#d68b4d);border-color:#a25e22;}
+.rank-row.bronze .rank-num::before{content:"🥉 ";}
+.rank-header{
+  display:grid;grid-template-columns:80px 1fr 160px 70px 70px 100px 90px;
+  gap:8px;padding:6px 16px;color:#666;font-size:13px;font-weight:bold;
+}
+
+/* =========================================================
+   MVP
+   ========================================================= */
+.mvp-card{
+  background:#fff;border-radius:10px;padding:14px 18px;
+  border:2px solid #e8eef1;margin-bottom:10px;
+}
+.mvp-card .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.mvp-card .name{font-size:20px;font-weight:bold;}
+.mvp-card .votes{background:var(--blue);color:#fff;padding:4px 14px;border-radius:20px;font-weight:bold;}
+.mvp-card.rank1{background:linear-gradient(135deg,#fff5c2,#ffe066);border-color:var(--gold-deep);}
+.mvp-card .reasons{display:flex;flex-direction:column;gap:4px;margin-top:6px;color:#444;font-size:14px;padding:0;}
+.mvp-card .reasons li{
+  background:#f7fbf7;padding:4px 10px;border-radius:6px;list-style:none;
+  border-left:3px solid var(--green);
+}
+
+/* =========================================================
+   表彰画面
+   ========================================================= */
+#tab-award .panel{
+  background:linear-gradient(135deg,#0a6b3b,#13994f);
+  color:#fff;border-top:6px solid var(--gold);
+}
+#tab-award h2{color:#fff;border-bottom-color:var(--gold);}
+.award-stage{
+  position:relative;background:#fff;color:var(--ink);
+  border-radius:20px;padding:40px;min-height:480px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:var(--shadow-lg);
+  border:6px solid var(--gold);overflow:hidden;
+}
+.award-stage::before{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 400px 200px at 20% 0%, rgba(245,197,24,.3), transparent 70%),
+    radial-gradient(ellipse 400px 200px at 80% 0%, rgba(245,197,24,.3), transparent 70%);
+  pointer-events:none;
+}
+.award-stage .label{
+  position:relative;z-index:1;
+  font-size:22px;color:var(--blue-deep);letter-spacing:.15em;
+  margin-bottom:14px;font-weight:bold;
+}
+.award-stage .big-icon{
+  position:relative;z-index:1;font-size:90px;line-height:1;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.2));
+  animation:bigFloat 2s ease-in-out infinite alternate;
+}
+@keyframes bigFloat{from{transform:translateY(0);}to{transform:translateY(-10px);}}
+.award-stage .name{
+  position:relative;z-index:1;
+  font-size:72px;font-weight:900;margin:10px 0;
+  color:var(--green-deep);
+  text-shadow:0 3px 0 #fff, 0 0 12px rgba(245,197,24,.4);
+  text-align:center;
+}
+.award-stage .sub{position:relative;z-index:1;color:#666;font-size:18px;}
+.award-stage .prize{
+  position:relative;z-index:1;margin-top:16px;
+  background:var(--gold);color:#000;padding:10px 20px;border-radius:20px;
+  font-weight:bold;font-size:18px;
+}
+.award-stage.champion{background:linear-gradient(135deg,#fff5c2,#ffe066);}
+.award-stage.champion .name{color:#7a5300;font-size:88px;}
+.award-stage.mvp{background:linear-gradient(135deg,#dbeafe,#93c5fd);}
+.award-stage.mvp .name{color:#1e3a8a;font-size:80px;}
+.award-progress{
+  display:flex;gap:6px;justify-content:center;margin-top:16px;
+}
+.award-progress .dot{
+  width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.4);
+}
+.award-progress .dot.active{background:var(--gold);box-shadow:0 0 12px var(--gold);}
+.award-nav{
+  display:flex;gap:12px;justify-content:center;margin-top:16px;
+}
+
+/* 編集行 */
+.editor-list{display:flex;flex-direction:column;gap:6px;}
+.editor-item{
+  display:flex;gap:8px;align-items:center;
+  background:#f7fbf7;padding:8px 12px;border-radius:8px;
+  border:1px solid #d9e5dd;
+}
+.editor-item input, .editor-item select{flex:1;padding:6px 10px;font-size:14px;}
+
+/* スコアボード上部の現在試合 */
+.now-match{
+  background:linear-gradient(135deg,var(--blue-deep),var(--blue));
+  color:#fff;border-radius:14px;padding:18px 24px;margin-bottom:16px;
+  display:flex;justify-content:space-between;align-items:center;
+  border:3px solid var(--gold);box-shadow:var(--shadow);
+}
+.now-match .nm-name{font-size:24px;font-weight:bold;color:var(--gold);}
+.now-match .nm-score{
+  font-size:32px;font-weight:900;display:flex;align-items:center;gap:14px;
+}
+.now-match .nm-score .num{background:var(--gold);color:#000;padding:6px 18px;border-radius:8px;min-width:70px;text-align:center;}
+
+/* =========================================================
+   ロール選択モーダル & ロール表示
+   ========================================================= */
+.role-modal{
+  position:fixed;inset:0;z-index:99999;
+  background:linear-gradient(135deg, rgba(8,26,42,.97), rgba(10,107,59,.97));
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;overflow-y:auto;
+}
+.role-modal.hidden{display:none;}
+.role-box{
+  background:#fff;border-radius:18px;padding:32px;
+  max-width:760px;width:100%;box-shadow:var(--shadow-lg);
+  border-top:8px solid var(--gold);
+}
+.role-box h2{
+  margin:0 0 6px;font-size:26px;color:var(--green-deep);
+  display:flex;align-items:center;gap:10px;
+}
+.role-box .lead{color:#555;margin:0 0 18px;}
+.role-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.role-card{
+  background:#f7fbf7;border:3px solid #d9e5dd;border-radius:14px;
+  padding:18px;cursor:pointer;text-align:center;transition:.2s;
+}
+.role-card:hover{border-color:var(--gold);background:#fff9e6;transform:translateY(-3px);}
+.role-card .icon{font-size:48px;line-height:1;}
+.role-card .ttl{font-size:20px;font-weight:bold;margin:8px 0 4px;color:var(--green-deep);}
+.role-card .desc{font-size:13px;color:#666;}
+.role-card.admin{border-color:var(--red);background:#fdf2f2;}
+.role-card.admin .ttl{color:var(--red);}
+.role-team-pick{
+  margin-top:14px;padding:14px;background:#f7fbf7;border-radius:10px;
+  border:2px dashed var(--green);display:none;
+}
+.role-team-pick.show{display:block;}
+.role-self-pick{
+  margin-top:14px;padding:14px;background:#fff9e6;border-radius:10px;
+  border:2px dashed var(--gold-deep);display:none;
+}
+.role-self-pick.show{display:block;}
+
+/* 質問マスタ編集 */
+.qmaster-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:8px;margin-bottom:6px;
+  background:#f7fbf7;border:1px solid #d1fae5;
+}
+.qmaster-row:hover{background:#ecfdf5;}
+.qmaster-num{
+  flex:0 0 36px;text-align:center;font-weight:bold;
+  color:var(--green-deep);font-size:13px;
+}
+.qmaster-input{
+  flex:1;padding:8px 10px;border:1px solid #d1fae5;
+  border-radius:6px;font-size:14px;background:#fff;
+}
+.qmaster-input:focus{border-color:var(--green-light);outline:none;box-shadow:0 0 0 2px rgba(30,189,98,.2);}
+.qmaster-actions{display:flex;gap:4px;flex:0 0 auto;}
+.role-bar{
+  background:linear-gradient(90deg, rgba(0,0,0,.5), rgba(0,0,0,.35));
+  color:#fff;
+  padding:10px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  border-bottom:3px solid var(--gold);font-size:14px;
+}
+.role-bar .role-tag{
+  background:var(--gold);color:#000;padding:5px 14px;border-radius:14px;
+  font-weight:bold;font-size:15px;
+}
+.role-bar .role-tag.admin{background:var(--red);color:#fff;}
+.role-bar .role-tag.team{background:var(--green-light);color:#000;}
+.role-bar .role-tag.player{background:var(--blue);color:#fff;}
+.role-bar .change-role{
+  margin-left:auto;background:var(--gold);color:#000;
+  border:2px solid #fff;padding:8px 18px;border-radius:8px;
+  cursor:pointer;font-size:15px;font-weight:bold;
+  box-shadow:0 3px 0 rgba(0,0,0,.3);
+}
+.role-bar .change-role:hover{background:#ffd84a;}
+.role-bar .change-role:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3);}
+
+/* 運営専用注意 */
+.admin-only-warn{
+  background:linear-gradient(135deg,#fde2e2,#fca5a5);
+  border:4px solid var(--red);border-radius:14px;
+  padding:20px;margin-bottom:18px;text-align:center;
+}
+.admin-only-warn .big{
+  font-size:28px;font-weight:900;color:#7a1d1d;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.admin-only-warn .small{color:#7a1d1d;margin-top:6px;}
+
+/* 参加者向けバナー */
+.team-banner, .player-banner{
+  background:linear-gradient(135deg,var(--green-deep),var(--green));
+  color:#fff;border-radius:12px;padding:14px 20px;margin-bottom:18px;
+  display:flex;align-items:center;gap:14px;
+  border:3px solid var(--gold);
+}
+.team-banner .flag, .player-banner .flag{font-size:36px;}
+.team-banner .label, .player-banner .label{font-size:13px;color:#ffe89a;letter-spacing:.1em;}
+.team-banner .name, .player-banner .name{font-size:24px;font-weight:bold;}
+
+/* 個人回答画面 */
+.player-quiz-card{
+  background:#fff;border-radius:16px;padding:24px;
+  box-shadow:var(--shadow);border:3px solid var(--gold);margin-bottom:14px;
+}
+.player-quiz-card .qhead{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:10px;
+  color:#666;font-size:14px;
+}
+.player-quiz-card .qbody{
+  font-size:22px;font-weight:bold;color:var(--ink);
+  background:#f7fbf7;padding:14px 18px;border-radius:10px;
+  border-left:6px solid var(--green);
+  margin-bottom:12px;
+}
+.player-quiz-card .choices-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+}
+.player-quiz-card .choice-btn{
+  background:#fff;border:3px solid #d9e5dd;border-radius:12px;
+  padding:14px 18px;cursor:pointer;text-align:left;
+  display:flex;align-items:center;gap:14px;
+  font-size:17px;font-family:inherit;font-weight:bold;color:var(--ink);
+  transition:.15s;
+}
+.player-quiz-card .choice-btn:hover{
+  border-color:var(--green);background:#eafbe6;
+}
+.player-quiz-card .choice-btn.selected{
+  background:linear-gradient(135deg,#fff5c2,#ffe066);
+  border-color:var(--gold-deep);
+}
+.player-quiz-card .choice-btn .letter{
+  width:46px;height:46px;border-radius:50%;
+  background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+}
+.player-quiz-card .choice-btn.selected .letter{background:var(--gold-deep);color:#fff;}
+.player-quiz-card .qfoot{
+  display:flex;justify-content:space-between;align-items:center;margin-top:12px;
+  color:#666;font-size:13px;
+}
+.player-status{
+  background:#eafbe6;border-left:6px solid var(--green);
+  padding:10px 14px;border-radius:8px;color:var(--green-deep);font-weight:bold;
+}
+
+/* 投影モードの正誤操作ボタン */
+.verdict-controls{
+  display:flex;gap:8px;align-items:center;
+  background:rgba(0,0,0,.4);padding:8px 14px;border-radius:10px;
+  border:2px solid var(--gold);
+}
+.verdict-controls .vc-label{color:#ffe89a;font-size:13px;font-weight:bold;}
+.btn-ok{background:#16a34a;color:#fff;}
+.btn-ok:hover{background:#22c55e;}
+.btn-ng{background:#dc2626;color:#fff;}
+.btn-ng:hover{background:#ef4444;}
+.btn-ok.active{box-shadow:0 0 0 3px #fff, 0 0 0 6px #16a34a;}
+.btn-ng.active{box-shadow:0 0 0 3px #fff, 0 0 0 6px #dc2626;}
+
+/* 投影モードのチーム回答セクション */
+.proj-team-answers{
+  display:flex;gap:14px;justify-content:center;margin:10px 0;
+}
+.proj-team-answer{
+  background:rgba(255,255,255,.95);color:var(--ink);
+  border-radius:12px;padding:10px 18px;
+  border:3px solid var(--blue);
+  min-width:200px;text-align:center;
+}
+.proj-team-answer .pt-team{font-size:14px;color:#666;}
+.proj-team-answer .pt-letter{font-size:36px;font-weight:900;color:var(--blue);}
+.proj-team-answer .pt-player{font-size:13px;color:#666;}
+.proj-team-answer.correct{background:linear-gradient(135deg,#fff5c2,#ffe066);border-color:var(--gold-deep);}
+.proj-team-answer.correct .pt-letter{color:#7a5300;}
+.proj-team-answer.wrong{background:#fde2e2;border-color:var(--red);}
+.proj-team-answer.wrong .pt-letter{color:var(--red);}
+
+/* ロール別の体背景バリエーション(視覚区別) */
+body[data-role="team"]{
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255,255,255,.12), transparent 40%),
+    linear-gradient(135deg, #0a6b3b, #1ebd62 50%, #0a6b3b);
+}
+body[data-role="player"]{
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255,255,255,.12), transparent 40%),
+    linear-gradient(135deg, #0b2a6b, #1d4ed8 50%, #0b2a6b);
+}
+body[data-role="projector"]{
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255,255,255,.10), transparent 40%),
+    linear-gradient(135deg, #081a2a, #0b2a6b 50%, #081a2a);
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============ ロール選択モーダル ============ -->
+<div class="role-modal" id="role-modal">
+  <div class="role-box">
+    <h2>🏆 ようこそ！まず利用モードを選んでください</h2>
+
+    <!-- Firebase接続状態バナー -->
+    <div id="fb-status-banner" style="margin-bottom:14px;padding:12px 16px;border-radius:10px;background:#fff3cd;border:2px solid #f5c518;color:#7a5300;font-size:14px;display:none;">
+      <strong>⚠️ Firebase未接続:</strong> 現在はローカル(このブラウザのみ)でデータを保存しています。複数人で共有するには下の「Firebase設定」を開いてください。
+    </div>
+    <div id="fb-connected-banner" style="margin-bottom:14px;padding:12px 16px;border-radius:10px;background:#d1fae5;border:2px solid #16a34a;color:#065f46;font-size:14px;display:none;">
+      <strong>✅ Firebase接続中:</strong> データは全員でリアルタイム共有されています。
+      <span id="fb-room-display" style="font-weight:bold;"></span>
+    </div>
+
+    <details style="margin-bottom:14px;background:#eef2ff;border-radius:10px;padding:10px 14px;border:1px solid #c7d2fe;">
+      <summary style="cursor:pointer;font-weight:bold;color:var(--blue-deep);">🔥 Firebase設定(複数人で共有する場合)</summary>
+      <div style="margin-top:10px;">
+        <p style="font-size:13px;color:#444;margin:4px 0;">
+          Firebase Realtime Databaseを使ってデータを全員でリアルタイム共有します。<br>
+          初回は運営者がFirebaseプロジェクトを作成し、設定JSONを貼り付けてください。<br>
+          参加者は同じ設定JSONかURLを共有してアクセスします。
+        </p>
+        <div class="form-row">
+          <div class="field" style="flex:3;">
+            <label>Firebase設定 (JSON)</label>
+            <textarea id="fb-config-input" rows="4" placeholder='例: {"apiKey":"...", "databaseURL":"https://xxx.firebaseio.com", "projectId":"..."}' style="font-family:monospace;font-size:12px;"></textarea>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>ルームID (同じイベントの参加者で揃える)</label>
+            <input type="text" id="fb-room-input" placeholder="例: jinwc2024" value="default">
+          </div>
+          <div class="field" style="flex:0 0 auto;">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="connectFirebase()">🔌 接続</button>
+          </div>
+          <div class="field" style="flex:0 0 auto;">
+            <label>&nbsp;</label>
+            <button class="btn btn-ghost" onclick="disconnectFirebase()">切断 (ローカルのみで使用)</button>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:10px;background:#fff;border-radius:8px;border:1px solid #e5e7eb;font-size:12px;color:#666;">
+          <strong>📌 共有URL生成:</strong>
+          <button class="btn btn-small btn-blue" onclick="generateShareUrl()" style="margin-left:8px;">🔗 共有URL生成</button>
+          <div id="share-url-display" style="margin-top:6px;word-break:break-all;font-family:monospace;"></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:#666;">
+          <strong>📖 Firebase設定の準備手順:</strong>
+          <ol style="margin:4px 0;padding-left:20px;">
+            <li><a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a>でプロジェクト作成 (無料)</li>
+            <li>左メニューから「Realtime Database」→「データベース作成」→「テストモード」</li>
+            <li>プロジェクト設定 → 「ウェブ」アプリ追加 → 設定オブジェクトをコピー</li>
+            <li>上の入力欄に <code>{apiKey, databaseURL, projectId, ...}</code> を貼り付け</li>
+          </ol>
+        </div>
+      </div>
+    </details>
+
+    <p class="lead">運営席のPCは「運営モード」、各チーム作問用PCは「チームモード」、参加者個人の回答用は「個人回答モード」を選択してください。あとで右上のボタンから切り替えられます。</p>
+    <div class="role-grid">
+      <div class="role-card admin" onclick="askPin('admin')">
+        <div class="icon">🛠️</div>
+        <div class="ttl">運営モード 🔒</div>
+        <div class="desc">全機能が利用可。投影制御・正誤判定・集計など<br><span style="color:var(--red);">※PINコードが必要</span></div>
+      </div>
+      <div class="role-card" onclick="showTeamPicker()">
+        <div class="icon">⚽</div>
+        <div class="ttl">チームモード</div>
+        <div class="desc">自チームの問題作成だけができる<br>他チームの内容は見えない</div>
+      </div>
+      <div class="role-card" onclick="showPlayerPicker()">
+        <div class="icon">📱</div>
+        <div class="ttl">個人回答モード</div>
+        <div class="desc">自分の名前で4択クイズに回答</div>
+      </div>
+      <div class="role-card admin" onclick="askPin('projector')">
+        <div class="icon">📺</div>
+        <div class="ttl">投影モード専用 🔒</div>
+        <div class="desc">スコアボード・投影画面のみ。<br>大型モニタ用<br><span style="color:var(--red);">※PINコードが必要</span></div>
+      </div>
+    </div>
+
+    <div class="role-pin-pick" id="role-pin-pick" style="display:none;margin-top:14px;padding:14px;background:#fef2f2;border-radius:10px;border:2px dashed var(--red);">
+      <strong style="color:var(--red);">🔒 運営/投影モード PINコード入力:</strong>
+      <p style="font-size:13px;color:#666;margin:6px 0;">参加者の誤操作防止のため、PINコードを入力してください(初期値: <code>1234</code>)。<br>運営の方は事前に共有されたPINを入力してください。</p>
+      <div class="form-row" style="margin-top:10px;">
+        <div class="field">
+          <label>PINコード(4桁)</label>
+          <input type="password" id="role-pin-input" maxlength="8" placeholder="****" autocomplete="off">
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button class="btn btn-danger" onclick="confirmPinRole()">🔓 認証して開始</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="role-team-pick" id="role-team-pick">
+      <strong style="color:var(--green-deep);">自分のチームを選んでください:</strong>
+      <div class="form-row" style="margin-top:10px;">
+        <div class="field">
+          <label>チーム</label>
+          <select id="role-team-select"></select>
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="confirmTeamRole()">この設定で開始</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="role-self-pick" id="role-self-pick">
+      <strong style="color:var(--gold-deep);">あなたの名前を選んでください:</strong>
+      <div class="form-row" style="margin-top:10px;">
+        <div class="field">
+          <label>氏名</label>
+          <select id="role-self-select"></select>
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button class="btn btn-gold" onclick="confirmPlayerRole()">この名前で開始</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ 現在のロール表示バー ============ -->
+<div class="role-bar" id="role-bar" style="display:none;">
+  <span>現在のモード:</span>
+  <span class="role-tag" id="role-tag-disp">-</span>
+  <span id="role-extra"></span>
+  <button class="change-role" onclick="changeRole()">モード変更</button>
+</div>
+
+<header class="scoreboard">
+  <div class="scoreboard-inner">
+    <div class="trophy">🏆</div>
+    <div class="title-block">
+      <h1>パーソナル<span class="title-accent">ワールドカップ</span></h1>
+      <div class="sub">〜 チーム対抗 人となり W杯 〜</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" data-tab="dash" data-roles="admin">📊 ダッシュボード</button>
+    <button class="tab-btn" data-tab="qmake" data-roles="admin,team">✏️ 問題作成</button>
+    <button class="tab-btn" data-tab="playerans" data-roles="admin,player">📱 個人回答</button>
+    <button class="tab-btn" data-tab="match" data-roles="admin">⚙️ 試合設定</button>
+    <button class="tab-btn" data-tab="proj" data-roles="admin,projector">📺 投影モード</button>
+    <button class="tab-btn" data-tab="scoreboard" data-roles="admin,projector">⚽ スコアボード</button>
+    <button class="tab-btn" data-tab="ranking" data-roles="admin,projector,team,player">🏅 個人ランキング</button>
+    <button class="tab-btn" data-tab="mvp" data-roles="admin">⭐ MVP投票</button>
+    <button class="tab-btn" data-tab="award" data-roles="admin,projector">🏆 表彰画面</button>
+    <button class="tab-btn" data-tab="data" data-roles="admin">💾 データ管理</button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ============ ダッシュボード ============ -->
+  <section id="tab-dash" class="tab-content active">
+    <div class="panel">
+      <h2><span class="badge">🏆</span> パーソナルワールドカップ 〜チーム対抗人となりW杯〜</h2>
+      <div id="dash-area"></div>
+    </div>
+  </section>
+
+  <!-- ============ 問題作成 ============ -->
+  <section id="tab-qmake" class="tab-content">
+
+    <div id="qmake-team-banner"></div>
+
+    <div class="panel">
+      <h2><span class="badge">⚠️</span> 問題作成のお願い（必読）</h2>
+      <div class="warn-strong">
+        <strong>ハラスメント防止のため、以下の内容は出題しないでください。</strong>
+        <ul style="margin:8px 0 0;padding-left:20px;">
+          <li>恋愛・結婚・家族構成の深掘り</li>
+          <li>年収・学歴・思想・宗教・政治に関する質問</li>
+          <li>容姿・体型・健康状態などコンプレックスにつながる内容</li>
+          <li>事実と異なる回答(出題者も対象者も)</li>
+        </ul>
+        <div style="margin-top:8px;">スポーツマンシップにのっとって、楽しく盛り上げましょう ⚽</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="badge">📊</span> チーム別作成状況</h2>
+      <div id="qmake-progress" class="team-progress"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="badge">✏️</span> 問題作成フォーム</h2>
+      <div class="form-row">
+        <div class="field">
+          <label>作成チーム</label>
+          <select id="qf-team"></select>
+        </div>
+        <div class="field">
+          <label>対象メンバー</label>
+          <select id="qf-member"></select>
+        </div>
+        <div class="field" style="flex:2;">
+          <label>質問</label>
+          <select id="qf-question"></select>
+        </div>
+      </div>
+      <div class="choice-grid">
+        <div class="field"><label>選択肢 A</label><input type="text" id="qf-a"></div>
+        <div class="field"><label>選択肢 B</label><input type="text" id="qf-b"></div>
+        <div class="field"><label>選択肢 C</label><input type="text" id="qf-c"></div>
+        <div class="field"><label>選択肢 D</label><input type="text" id="qf-d"></div>
+      </div>
+      <div class="form-row" style="margin-top:10px;">
+        <div class="field" style="flex:0 0 200px;">
+          <label>正解</label>
+          <select id="qf-correct">
+            <option value="">選択</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option>
+          </select>
+        </div>
+        <div class="field" style="flex:2;">
+          <label>補足コメント (任意)</label>
+          <input type="text" id="qf-note" placeholder="例: ヒントや裏話など">
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="saveQuestion()" id="qf-save-btn">💾 保存</button>
+            <button class="btn btn-ghost" onclick="cancelEditQuestion()" id="qf-cancel-btn" style="display:none;">キャンセル</button>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="qf-editing-id">
+    </div>
+
+    <div class="panel">
+      <h2><span class="badge">📋</span> 作成済み問題一覧</h2>
+      <div id="qlist-area"></div>
+    </div>
+
+  </section>
+
+  <!-- ============ 個人回答 ============ -->
+  <section id="tab-playerans" class="tab-content">
+    <div class="panel" id="player-banner-wrap"></div>
+
+    <div class="panel">
+      <h2><span class="badge">📱</span> あなたの回答</h2>
+      <p class="hint">運営が現在出題している問題が下に表示されます。A〜Dから選んで回答してください。回答済みでも切り替え可能です(運営の正解発表前まで反映)。</p>
+      <div id="player-quiz-area"></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="badge">📋</span> あなたの回答履歴</h2>
+      <div id="player-history-area"></div>
+    </div>
+  </section>
+
+  <!-- ============ 試合設定 ============ -->
+  <section id="tab-match" class="tab-content">
+    <div class="panel">
+      <h2><span class="badge">⚙️</span> 試合設定</h2>
+      <p class="hint">各試合の対戦カードと使用する問題を設定します。</p>
+      <div id="match-area"></div>
+      <div class="row-actions">
+        <button class="btn btn-primary" onclick="addMatch()">＋ 試合を追加</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 投影モード（タブ上での起動画面） ============ -->
+  <section id="tab-proj" class="tab-content">
+    <div class="panel">
+      <h2><span class="badge">📺</span> 投影モード</h2>
+      <p class="hint">試合を選んで開始すると、全画面の投影モードに移行します。プロジェクタや大型モニタに映してください。</p>
+      <div class="form-row">
+        <div class="field">
+          <label>試合を選択</label>
+          <select id="proj-match-select"></select>
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button class="btn btn-gold btn-large" onclick="startProjection()">▶ 投影開始</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ スコアボード ============ -->
+  <section id="tab-scoreboard" class="tab-content">
+    <div class="panel">
+      <h2><span class="badge">⚽</span> スコアボード</h2>
+      <div id="scoreboard-area"></div>
+    </div>
+  </section>
+
+  <!-- ============ 個人ランキング ============ -->
+  <section id="tab-ranking" class="tab-content">
+    <div class="panel">
+      <h2><span class="badge">🏅</span> 個人ランキング（平均点・正解率）</h2>
+      <p class="hint">個人回答モードでの回答のみが集計対象です。チームを代表した回答は含まれません。同率の場合は、正解数→回答数の順で上位。回答数0の人はランキング対象外です。</p>
+      <div id="ranking-area"></div>
+    </div>
+  </section>
+
+  <!-- ============ MVP投票 ============ -->
+  <section id="tab-mvp" class="tab-content">
+    <div class="panel">
+      <h2><span class="badge">⭐</span> MVP投票</h2>
+      <div class="form-row">
+        <div class="field"><label>投票者名</label><select id="vote-voter"></select></div>
+        <div class="field"><label>MVP候補者名</label><select id="vote-candidate"></select></div>
+        <div class="field" style="flex:2;"><label>理由</label><input type="text" id="vote-reason" placeholder="例: 決勝で大活躍した"></div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="registerVote()">★ 投票</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2><span class="badge">📊</span> MVP投票ランキング</h2>
+      <div id="mvp-rank-area"></div>
+    </div>
+    <div class="panel">
+      <h2><span class="badge">📋</span> 投票履歴</h2>
+      <div id="votes-table-area"></div>
+    </div>
+  </section>
+
+  <!-- ============ 表彰画面 ============ -->
+  <section id="tab-award" class="tab-content">
+    <div class="panel">
+      <h2>🏆 表彰式 AWARDS CEREMONY 🏆</h2>
+
+      <h3>景品名の設定</h3>
+      <div class="form-row" style="background:rgba(255,255,255,.1);padding:14px;border-radius:10px;">
+        <div class="field"><label style="color:#fff;">優勝</label><input type="text" id="prize-champion" placeholder="例: ディナー券"></div>
+        <div class="field"><label style="color:#fff;">準優勝</label><input type="text" id="prize-runnerup" placeholder="例: ランチ券"></div>
+        <div class="field"><label style="color:#fff;">個人1位</label><input type="text" id="prize-r1" placeholder="例: Amazonギフト 1万円"></div>
+        <div class="field"><label style="color:#fff;">個人2位</label><input type="text" id="prize-r2" placeholder=""></div>
+        <div class="field"><label style="color:#fff;">個人3位</label><input type="text" id="prize-r3" placeholder=""></div>
+        <div class="field"><label style="color:#fff;">MVP</label><input type="text" id="prize-mvp" placeholder=""></div>
+        <div class="field" style="flex:0 0 auto;"><label>&nbsp;</label><button class="btn btn-gold" onclick="savePrizes()">💾 保存</button></div>
+      </div>
+
+      <h3 style="margin-top:24px;">表彰式</h3>
+      <div id="award-stage-wrap"></div>
+      <div class="award-nav">
+        <button class="btn btn-ghost btn-large" onclick="awardPrev()">◀ 前へ</button>
+        <button class="btn btn-gold btn-large" onclick="awardNext()">次へ ▶</button>
+        <button class="btn btn-blue" onclick="fireConfetti()">🎉 紙吹雪</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ データ管理 ============ -->
+  <section id="tab-data" class="tab-content">
+
+    <div class="panel">
+      <h2><span class="badge">📝</span> 質問マスタ編集</h2>
+      <p class="hint">各チームが問題作成時に選ぶ質問文の一覧です。編集・並び替え・追加・削除ができます。変更は全チームの問題作成画面に即時反映されます。</p>
+      <div id="qmaster-list"></div>
+      <button class="btn btn-primary" onclick="addQMaster()" style="margin-top:12px;">＋ 質問を追加</button>
+    </div>
+
+    <div class="panel">
+      <h2><span class="badge">🌍</span> チーム管理</h2>
+      <p class="hint">国名チーム。絵文字フラグも編集できます。</p>
+      <div id="team-editor" class="editor-list"></div>
+      <div class="row-actions">
+        <button class="btn btn-primary" onclick="addTeam()">＋ チーム追加</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="badge">👥</span> 参加者管理</h2>
+      <p class="hint">参加者は氏名のみで管理します。所属チームをプルダウンで選択してください。</p>
+      <div id="player-editor" class="editor-list"></div>
+      <div class="row-actions">
+        <button class="btn btn-primary" onclick="addPlayer()">＋ 参加者追加</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="badge">📥</span> CSV出力</h2>
+      <div class="row-actions">
+        <button class="btn btn-blue" onclick="exportQuestionsCSV()">作成問題一覧</button>
+        <button class="btn btn-blue" onclick="exportAnswersCSV()">回答履歴</button>
+        <button class="btn btn-blue" onclick="exportMatchScoresCSV()">試合別得点</button>
+        <button class="btn btn-blue" onclick="exportRankingCSV()">個人得点ランキング</button>
+        <button class="btn btn-blue" onclick="exportMVPCSV()">MVP投票結果</button>
+      </div>
+      <p class="hint">UTF-8 BOM付き。Excelでもそのまま開けます。</p>
+    </div>
+
+    <div class="panel">
+      <h2><span class="badge">🔒</span> 運営/投影モード PIN設定</h2>
+      <p class="hint">運営モード・投影モードへのアクセスを保護するPINコードです。参加者には共有しないでください。初期値は <code>1234</code>。</p>
+      <div class="form-row">
+        <div class="field">
+          <label>新しいPIN</label>
+          <input type="text" id="pin-new" placeholder="新しいPIN(4〜8桁推奨)">
+        </div>
+        <div class="field" style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button class="btn btn-danger" onclick="updatePin()">🔑 PIN変更</button>
+        </div>
+        <div class="field" style="flex:1;">
+          <label>&nbsp;</label>
+          <div style="padding:8px;background:#f7fbf7;border-radius:6px;color:#666;font-size:13px;">
+            現在のPIN: <strong id="pin-current-display">****</strong>
+            <button class="btn btn-small btn-ghost" onclick="togglePinReveal()" style="margin-left:8px;">表示/非表示</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="badge">🗑</span> リセット</h2>
+      <div class="row-actions">
+        <button class="btn btn-ghost" onclick="resetAnswers()">回答履歴のみリセット</button>
+        <button class="btn btn-ghost" onclick="resetVotes()">MVP投票のみリセット</button>
+        <button class="btn btn-ghost" onclick="resetQuestions()">作成問題のみリセット</button>
+        <button class="btn btn-danger" onclick="resetAll()">⚠ 全データリセット</button>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+
+<!-- ============ 投影モード(全画面オーバーレイ) ============ -->
+<div class="projector" id="projector">
+  <div class="proj-top">
+    <div class="proj-match-info">
+      <div class="proj-match-name" id="pm-name">試合</div>
+      <div class="proj-vs">
+        <span class="team-name" id="pm-teamA">--</span>
+        <span class="score" id="pm-scoreA">0</span>
+        <span style="color:#ffe89a;">-</span>
+        <span class="score" id="pm-scoreB">0</span>
+        <span class="team-name" id="pm-teamB">--</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <div style="color:#ffe89a;font-size:16px;">問題 <span id="pm-qpos">-</span> / <span id="pm-qtotal">-</span></div>
+      <button class="proj-close" style="background:var(--gold);color:#000;" onclick="changeRole()">⚙️ モード変更</button>
+      <button class="proj-close" onclick="closeProjection()">投影終了</button>
+    </div>
+  </div>
+
+  <div class="proj-body">
+    <div class="proj-qmeta">
+      <span class="chip quizteam">出題: <span id="pm-quizteam">-</span></span>
+      <span class="chip member">対象: <span id="pm-member">-</span></span>
+    </div>
+    <div class="proj-question" id="pm-question">質問が表示されます</div>
+    <div class="proj-team-answers" id="pm-team-answers"></div>
+    <div class="proj-choices" id="pm-choices"></div>
+  </div>
+
+  <div class="proj-controls">
+    <div class="field">
+      <label>回答チーム</label>
+      <select id="pm-ansteam"></select>
+    </div>
+    <div class="field">
+      <label>回答者</label>
+      <select id="pm-ansplayer"></select>
+    </div>
+    <div class="field">
+      <label>回答</label>
+      <select id="pm-ansvalue">
+        <option value="">--</option>
+        <option>A</option><option>B</option><option>C</option><option>D</option>
+      </select>
+    </div>
+    <div class="field" style="flex:0 0 auto;">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary" onclick="submitProjAnswer()">回答確定</button>
+    </div>
+    <div class="field" style="flex:0 0 auto;">
+      <label>&nbsp;</label>
+      <button class="btn btn-gold" onclick="revealAnswer()">🎯 正解発表</button>
+    </div>
+    <div class="field" style="flex:0 0 auto;">
+      <label>&nbsp;</label>
+      <div class="verdict-controls">
+        <span class="vc-label">運営判定:</span>
+        <button class="btn btn-small btn-ok" id="vc-ok-btn" onclick="setVerdict('正解')">⭕ 正解</button>
+        <button class="btn btn-small btn-ng" id="vc-ng-btn" onclick="setVerdict('不正解')">❌ 不正解</button>
+      </div>
+    </div>
+    <div class="field" style="flex:0 0 auto;">
+      <label>&nbsp;</label>
+      <button class="btn btn-ghost" onclick="undoProjAnswer()">↩ 取り消し</button>
+    </div>
+    <div class="field" style="flex:0 0 auto;">
+      <label>&nbsp;</label>
+      <button class="btn btn-blue" onclick="prevQuestion()">◀ 前の問題</button>
+    </div>
+    <div class="field" style="flex:0 0 auto;">
+      <label>&nbsp;</label>
+      <button class="btn btn-blue" onclick="nextQuestion()">次の問題 ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- 演出オーバーレイ -->
+<div class="verdict" id="verdict">
+  <div class="verdict-text" id="verdict-text"></div>
+</div>
+<div class="confetti" id="confetti"></div>
+
+
+<script>
+/* ============================================================
+   データモデル & 初期データ
+   ============================================================ */
+const STORAGE_KEY = "personal_wc_v2";
+
+const DEFAULT_QUESTIONS = [
+  "子どもの頃の「将来の夢」で、一番本気で目指していたものは？",
+  "小学生のとき一番好きだった教科は？",
+  "学生時代のあだ名は？",
+  "子どものころ、一番ハマっていた遊び（コンテンツ）は？",
+  "いま一番長く続いている趣味は？",
+  "いつか本気でやってみたいと思っていることは？",
+  "いま一番行きたい旅行先は？",
+  "ここ1年で一番ハマったもの（コンテンツ・趣味）は？",
+  "「これをやるとリフレッシュできる」という定番は？",
+  "一番好きなジャンルの料理は？",
+  "コンビニでつい手が伸びるものは？",
+  "「これだけは一週間連続でも食べられる」と思う食べものは？",
+  "つい何度も見返してしまう作品は？",
+  "よく聴く歌手/曲は？",
+  "好きな漫画／アニメ／ドラマの「主人公」に自分を例えると？",
+  "YouTubeなど動画サービスで一番よく見るジャンルは？",
+  "自分の強みは？",
+  "「これだけは譲れない」と思う価値観は？",
+  "仕事中に一番テンションが上がる瞬間は？",
+  "人から褒められて嬉しいポイントは？"
+];
+
+const DEFAULT_TEAMS = [
+  {name:"イギリス", flag:"🇬🇧"},
+  {name:"アメリカ", flag:"🇺🇸"},
+  {name:"オーストラリア", flag:"🇦🇺"},
+  {name:"日本",     flag:"🇯🇵"},
+  {name:"スペイン", flag:"🇪🇸"},
+  {name:"フランス", flag:"🇫🇷"}
+];
+
+const DEFAULT_PLAYERS = [
+  // イギリス (リーダー: 市井 汰樂)
+  {name:"市井 汰樂",   team:"イギリス"},
+  {name:"梶川 友葉",   team:"イギリス"},
+  {name:"山本 未来",   team:"イギリス"},
+  {name:"土田 晃貴",   team:"イギリス"},
+  {name:"長谷川 祐",   team:"イギリス"},
+  // アメリカ (リーダー: 谷 智之)
+  {name:"谷 智之",     team:"アメリカ"},
+  {name:"永見 緋奈子", team:"アメリカ"},
+  {name:"鹿島 博喜",   team:"アメリカ"},
+  {name:"山内 友翔",   team:"アメリカ"},
+  {name:"濱田 雄大",   team:"アメリカ"},
+  // オーストラリア (リーダー: 齊藤 愛)
+  {name:"齊藤 愛",     team:"オーストラリア"},
+  {name:"和田 妃奈英", team:"オーストラリア"},
+  {name:"伊藤 浩太郎", team:"オーストラリア"},
+  {name:"宮本 紘治",   team:"オーストラリア"},
+  {name:"板津 耕気",   team:"オーストラリア"},
+  // 日本 (リーダー: 梶田 菜生)
+  {name:"梶田 菜生",   team:"日本"},
+  {name:"津金澤 紘人", team:"日本"},
+  {name:"渡瀬 太郎",   team:"日本"},
+  {name:"高村 星",     team:"日本"},
+  {name:"小川 華穂",   team:"日本"},
+  // スペイン (リーダー: 伊藤 真士)
+  {name:"伊藤 真士",   team:"スペイン"},
+  {name:"細谷 日珠",   team:"スペイン"},
+  {name:"泉 幸希",     team:"スペイン"},
+  {name:"服部 涼楓",   team:"スペイン"},
+  {name:"安達 圭佑",   team:"スペイン"},
+  // フランス (リーダー: 新井 佑太郎)
+  {name:"新井 佑太郎", team:"フランス"},
+  {name:"林 知輝",     team:"フランス"},
+  {name:"西尾 淳之介", team:"フランス"},
+  {name:"臼井 晴希",   team:"フランス"},
+  {name:"北岸 奈穂",   team:"フランス"}
+];
+
+const DEFAULT_MATCHES = [
+  {id:"m1", name:"試合①", teamA:"イギリス",     teamB:"日本",         questionIds:[], status:"未開始"},
+  {id:"m2", name:"試合②", teamA:"アメリカ",     teamB:"オーストラリア", questionIds:[], status:"未開始"},
+  {id:"m3", name:"試合③", teamA:"フランス",     teamB:"スペイン",      questionIds:[], status:"未開始"},
+  {id:"m4", name:"試合④", teamA:"イギリス",     teamB:"アメリカ",      questionIds:[], status:"未開始"},
+  {id:"m5", name:"決勝",   teamA:"イギリス",     teamB:"フランス",      questionIds:[], status:"未開始"}
+];
+
+const DEFAULT_DATA = {
+  teams: DEFAULT_TEAMS,
+  players: DEFAULT_PLAYERS,
+  questionMaster: DEFAULT_QUESTIONS, // 質問文だけ
+  questions: [],   // {id, team, member, qIndex(質問マスタのindex), a,b,c,d, correct, note}
+  matches: DEFAULT_MATCHES,
+  answers: [],     // {id, matchId, questionId, ansTeam, ansPlayer, answer, correct(A/B/C/D), result(正解/不正解)}
+  votes: [],
+  prizes: {champion:"", runnerup:"", r1:"", r2:"", r3:"", mvp:""},
+  playerAnswers: [],   // 個人回答: {id, playerName, questionId, answer, correct, result, ts}
+  activeQuestion: null // 現在出題中: {matchId, questionId} (個人回答画面に表示する問題)
+};
+
+let data = loadData();
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return structuredClone(DEFAULT_DATA);
+    const parsed = JSON.parse(raw);
+    const d = Object.assign(structuredClone(DEFAULT_DATA), parsed);
+    // データ正規化(旧バージョンとの互換)
+    if(!Array.isArray(d.playerAnswers)) d.playerAnswers = [];
+    if(!d.prizes || typeof d.prizes !== 'object') d.prizes = {champion:"",runnerup:"",r1:"",r2:"",r3:"",mvp:""};
+    d.matches.forEach(m=>{
+      if(!Array.isArray(m.questionIds)) m.questionIds = [];
+      if(!m.status) m.status = "未開始";
+      if(!m.id) m.id = uid();
+    });
+    d.questions.forEach(q=>{
+      if(!q.id) q.id = uid();
+    });
+    d.answers.forEach(a=>{
+      if(!a.id) a.id = uid();
+      if(a.revealed === undefined) a.revealed = !!(a.result);
+    });
+    return d;
+  }catch(e){ return structuredClone(DEFAULT_DATA); }
+}
+function saveData(){
+  // ローカルに即時保存(オフライン保険)
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
+  // Firebase接続中ならクラウドにも保存
+  if(fb.connected && fb.db && !fb.suppressWrite){
+    try{
+      fb._fbWriting = true;
+      fb._fb.set(fb._fb.ref(fb.db, "rooms/" + fb.roomId + "/data"), data);
+    }catch(e){ console.error("Firebase write error", e); }
+    finally{
+      // 短時間後にフラグ解除
+      setTimeout(()=>{ fb._fbWriting = false; }, 100);
+    }
+  }
+}
+
+/* ============================================================
+   Firebase 連携
+   ============================================================ */
+const FB_CONFIG_KEY = "personal_wc_fb_config";
+const FB_ROOM_KEY   = "personal_wc_fb_room";
+let fb = {
+  app:null, db:null, connected:false, roomId:"default",
+  _fb:null, suppressWrite:false, _fbWriting:false, _unsub:null
+};
+
+function loadFbSettings(){
+  try{
+    const cfgRaw = localStorage.getItem(FB_CONFIG_KEY);
+    const room = localStorage.getItem(FB_ROOM_KEY) || "default";
+    if(cfgRaw){
+      return {config: JSON.parse(cfgRaw), roomId: room};
+    }
+  }catch(e){}
+  return null;
+}
+function saveFbSettings(config, roomId){
+  localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(config));
+  localStorage.setItem(FB_ROOM_KEY, roomId);
+}
+function clearFbSettings(){
+  localStorage.removeItem(FB_CONFIG_KEY);
+  localStorage.removeItem(FB_ROOM_KEY);
+}
+
+function applyFbStatusUI(){
+  const unconn = document.getElementById("fb-status-banner");
+  const conn   = document.getElementById("fb-connected-banner");
+  const room   = document.getElementById("fb-room-display");
+  if(fb.connected){
+    if(unconn) unconn.style.display = "none";
+    if(conn)   conn.style.display = "block";
+    if(room)   room.textContent = " ルーム: " + fb.roomId;
+  } else {
+    if(unconn) unconn.style.display = "block";
+    if(conn)   conn.style.display = "none";
+  }
+}
+
+async function tryAutoConnectFirebase(){
+  // 1) URLパラメータから設定を取得
+  const params = new URLSearchParams(location.search);
+  const cfgParam = params.get("fbcfg");
+  const roomParam = params.get("room");
+  if(cfgParam){
+    try{
+      const config = JSON.parse(atob(decodeURIComponent(cfgParam)));
+      const roomId = roomParam || "default";
+      saveFbSettings(config, roomId);
+      await connectFirebaseWith(config, roomId);
+      // URLからパラメータを除去
+      history.replaceState({}, "", location.pathname);
+      return;
+    }catch(e){ console.warn("URL param parse failed", e); }
+  }
+  // 2) localStorageから復元
+  const saved = loadFbSettings();
+  if(saved && saved.config){
+    // 入力欄にも復元
+    const cfgInput = document.getElementById("fb-config-input");
+    const roomInput = document.getElementById("fb-room-input");
+    if(cfgInput) cfgInput.value = JSON.stringify(saved.config, null, 2);
+    if(roomInput) roomInput.value = saved.roomId;
+    await connectFirebaseWith(saved.config, saved.roomId);
+  }
+  applyFbStatusUI();
+}
+
+function waitForFirebaseSdk(){
+  return new Promise(resolve=>{
+    if(window._fb) return resolve();
+    window.addEventListener("firebase-ready", ()=>resolve(), {once:true});
+    // タイムアウト保険(5秒)
+    setTimeout(()=>resolve(), 5000);
+  });
+}
+
+async function connectFirebase(){
+  const cfgTxt = document.getElementById("fb-config-input").value.trim();
+  const roomId = document.getElementById("fb-room-input").value.trim() || "default";
+  if(!cfgTxt){ alert("Firebase設定JSONを貼り付けてください"); return; }
+  let config;
+  try{ config = JSON.parse(cfgTxt); }
+  catch(e){ alert("JSONの形式が正しくありません: " + e.message); return; }
+  if(!config.databaseURL && !config.projectId){
+    alert("Firebase設定に databaseURL または projectId がありません"); return;
+  }
+  saveFbSettings(config, roomId);
+  await connectFirebaseWith(config, roomId);
+}
+
+async function connectFirebaseWith(config, roomId){
+  await waitForFirebaseSdk();
+  if(!window._fb){ alert("Firebase SDKの読み込みに失敗しました(ネットワーク確認)"); return; }
+  try{
+    // 既存切断
+    if(fb._unsub){ try{ fb._unsub(); }catch(e){} fb._unsub = null; }
+    if(!config.databaseURL && config.projectId){
+      config.databaseURL = `https://${config.projectId}-default-rtdb.firebaseio.com`;
+    }
+    fb._fb = window._fb;
+    fb.app = fb._fb.initializeApp(config, "wcApp_" + Date.now());
+    fb.db  = fb._fb.getDatabase(fb.app);
+    fb.roomId = roomId;
+    // 既存データを取得して、ローカルとマージ
+    const snap = await fb._fb.get(fb._fb.ref(fb.db, "rooms/" + roomId + "/data"));
+    if(snap.exists()){
+      // クラウドにデータがある → それを採用
+      data = normalizeData(snap.val());
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
+    } else {
+      // クラウドが空 → ローカルデータをアップロード
+      await fb._fb.set(fb._fb.ref(fb.db, "rooms/" + roomId + "/data"), data);
+    }
+    // リアルタイム購読
+    fb._unsub = fb._fb.onValue(fb._fb.ref(fb.db, "rooms/" + roomId + "/data"), (snap)=>{
+      if(fb._fbWriting) return; // 自分の書き込みエコーは無視
+      const val = snap.val();
+      if(!val) return;
+      const fresh = normalizeData(val);
+      if(JSON.stringify(fresh) !== JSON.stringify(data)){
+        data = fresh;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
+        renderAll();
+      }
+    });
+    fb.connected = true;
+    applyFbStatusUI();
+    renderAll();
+    console.log("Firebase connected to room:", roomId);
+  }catch(e){
+    console.error(e);
+    alert("Firebase接続失敗: " + e.message);
+    fb.connected = false;
+    applyFbStatusUI();
+  }
+}
+
+function disconnectFirebase(){
+  if(fb._unsub){ try{ fb._unsub(); }catch(e){} fb._unsub = null; }
+  fb.connected = false;
+  fb.db = null;
+  fb.app = null;
+  clearFbSettings();
+  applyFbStatusUI();
+  alert("Firebaseから切断しました。以降このブラウザのみでデータを保存します。");
+}
+
+function generateShareUrl(){
+  if(!fb.connected){ alert("先にFirebaseに接続してください"); return; }
+  const saved = loadFbSettings();
+  if(!saved){ alert("Firebase設定が見つかりません"); return; }
+  const encoded = encodeURIComponent(btoa(JSON.stringify(saved.config)));
+  const url = location.origin + location.pathname + "?fbcfg=" + encoded + "&room=" + encodeURIComponent(saved.roomId);
+  const disp = document.getElementById("share-url-display");
+  disp.innerHTML = `
+    <div style="background:#f7fbf7;padding:8px;border-radius:6px;border:1px solid #d9e5dd;">
+      <input type="text" value="${esc(url)}" readonly onclick="this.select();" style="width:100%;padding:6px;font-family:monospace;font-size:11px;">
+      <button class="btn btn-small btn-primary" style="margin-top:6px;" onclick="navigator.clipboard.writeText('${url.replace(/'/g,"\\'")}').then(()=>alert('コピーしました'))">📋 コピー</button>
+    </div>
+  `;
+}
+
+function normalizeData(raw){
+  const d = Object.assign(structuredClone(DEFAULT_DATA), raw||{});
+  if(!Array.isArray(d.playerAnswers)) d.playerAnswers = [];
+  if(!d.prizes || typeof d.prizes !== 'object') d.prizes = {champion:"",runnerup:"",r1:"",r2:"",r3:"",mvp:""};
+  if(!Array.isArray(d.matches)) d.matches = [];
+  if(!Array.isArray(d.questions)) d.questions = [];
+  if(!Array.isArray(d.answers)) d.answers = [];
+  if(!Array.isArray(d.votes)) d.votes = [];
+  d.matches.forEach(m=>{
+    if(!Array.isArray(m.questionIds)) m.questionIds = [];
+    if(!m.status) m.status = "未開始";
+    if(!m.id) m.id = uid();
+  });
+  d.questions.forEach(q=>{
+    if(!q.id) q.id = uid();
+  });
+  d.answers.forEach(a=>{
+    if(!a.id) a.id = uid();
+    if(a.revealed === undefined) a.revealed = !!(a.result);
+  });
+  return d;
+}
+
+/* ============================================================
+   ロール管理 (admin / team / player / projector)
+   ============================================================ */
+const ROLE_KEY = "personal_wc_role_v2";
+let userRole = null; // {role:"admin"|"team"|"player"|"projector", team?, name?}
+
+function loadRole(){
+  try{
+    const raw = sessionStorage.getItem(ROLE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return null;
+}
+function saveRole(r){
+  if(r) sessionStorage.setItem(ROLE_KEY, JSON.stringify(r));
+  else sessionStorage.removeItem(ROLE_KEY);
+}
+function initRole(){
+  userRole = loadRole();
+  if(!userRole){
+    showRoleModal();
+  } else {
+    hideRoleModal();
+    applyRole();
+  }
+}
+function showRoleModal(){
+  // チーム/個人プルダウンの初期化
+  const tSel = document.getElementById("role-team-select");
+  tSel.innerHTML = data.teams.map(t=>`<option value="${esc(t.name)}">${t.flag} ${esc(t.name)}</option>`).join("");
+  const sSel = document.getElementById("role-self-select");
+  sSel.innerHTML = `<option value="">-- 選択 --</option>` + data.players.map(p=>`<option value="${esc(p.name)}">${esc(p.name)} (${teamFlag(p.team)} ${esc(p.team)})</option>`).join("");
+  document.getElementById("role-team-pick").classList.remove("show");
+  document.getElementById("role-self-pick").classList.remove("show");
+  const pinPick = document.getElementById("role-pin-pick");
+  if(pinPick) pinPick.style.display = "none";
+  document.getElementById("role-modal").classList.remove("hidden");
+}
+function hideRoleModal(){
+  document.getElementById("role-modal").classList.add("hidden");
+}
+function showTeamPicker(){
+  document.getElementById("role-team-pick").classList.add("show");
+  document.getElementById("role-self-pick").classList.remove("show");
+  document.getElementById("role-pin-pick").style.display = "none";
+}
+function showPlayerPicker(){
+  document.getElementById("role-self-pick").classList.add("show");
+  document.getElementById("role-team-pick").classList.remove("show");
+  document.getElementById("role-pin-pick").style.display = "none";
+}
+
+/* PIN認証 (運営・投影モード) */
+const DEFAULT_PIN = "1234"; // ローカルストレージで上書き可能
+let pendingPinRole = null; // 'admin' | 'projector'
+function getCurrentPin(){
+  return localStorage.getItem("personal_wc_pin") || DEFAULT_PIN;
+}
+function setCurrentPin(p){
+  localStorage.setItem("personal_wc_pin", p);
+}
+function askPin(role){
+  pendingPinRole = role;
+  document.getElementById("role-pin-pick").style.display = "block";
+  document.getElementById("role-team-pick").classList.remove("show");
+  document.getElementById("role-self-pick").classList.remove("show");
+  document.getElementById("role-pin-input").value = "";
+  setTimeout(()=>document.getElementById("role-pin-input").focus(), 100);
+}
+function confirmPinRole(){
+  const input = document.getElementById("role-pin-input").value.trim();
+  if(!input){ alert("PINコードを入力してください"); return; }
+  if(input !== getCurrentPin()){
+    alert("PINコードが違います"); return;
+  }
+  if(!pendingPinRole){ alert("不正な状態です"); return; }
+  pickRole(pendingPinRole);
+  pendingPinRole = null;
+}
+function updatePin(){
+  const v = document.getElementById("pin-new").value.trim();
+  if(!v){ alert("新しいPINを入力してください"); return; }
+  if(v.length < 3){ alert("PINは3文字以上推奨です"); return; }
+  if(!confirm(`PINを「${v}」に変更しますか？\n以降、運営・投影モードへのアクセスにこのPINが必要です。`)) return;
+  setCurrentPin(v);
+  document.getElementById("pin-new").value = "";
+  refreshPinDisplay();
+  alert("PINを変更しました");
+}
+let _pinRevealed = false;
+function togglePinReveal(){
+  _pinRevealed = !_pinRevealed;
+  refreshPinDisplay();
+}
+function refreshPinDisplay(){
+  const disp = document.getElementById("pin-current-display");
+  if(!disp) return;
+  disp.textContent = _pinRevealed ? getCurrentPin() : "****";
+}
+function confirmTeamRole(){
+  const team = document.getElementById("role-team-select").value;
+  if(!team){ alert("チームを選んでください"); return; }
+  pickRole("team", {team});
+}
+function confirmPlayerRole(){
+  const name = document.getElementById("role-self-select").value;
+  if(!name){ alert("名前を選んでください"); return; }
+  const p = data.players.find(x=>x.name===name);
+  pickRole("player", {name, team:p?.team||""});
+}
+function pickRole(role, extra){
+  userRole = Object.assign({role}, extra||{});
+  saveRole(userRole);
+  hideRoleModal();
+  applyRole();
+}
+function changeRole(){
+  saveRole(null);
+  userRole = null;
+  // ロールバーを一旦隠す
+  const bar = document.getElementById("role-bar");
+  if(bar) bar.style.display = "none";
+  // 投影モードが起動中なら閉じる
+  const proj = document.getElementById("projector");
+  if(proj && proj.classList.contains("active")){
+    proj.classList.remove("active");
+  }
+  showRoleModal();
+}
+function applyRole(){
+  if(!userRole) return;
+  const role = userRole.role;
+
+  // ロールバー表示
+  const bar = document.getElementById("role-bar");
+  const tag = document.getElementById("role-tag-disp");
+  const extra = document.getElementById("role-extra");
+  tag.className = "role-tag "+role;
+  let label = "";
+  if(role==="admin"){ label="🛠️ 運営"; extra.textContent="(全機能利用可)"; }
+  else if(role==="team"){
+    label=`⚽ チーム: ${teamFlag(userRole.team)} ${userRole.team}`;
+    extra.textContent="他チームの内容は閲覧できません";
+  }
+  else if(role==="player"){
+    label=`📱 個人: ${userRole.name}`;
+    extra.textContent=`(${teamFlag(userRole.team)} ${userRole.team})`;
+  }
+  else if(role==="projector"){
+    label="📺 投影モード専用";
+    extra.textContent="投影/スコアボード/表彰のみ表示";
+  }
+  tag.textContent = label;
+  bar.style.display = "flex";
+
+  // 体に role を表す class を付与（CSSフックに使える）
+  document.body.dataset.role = role;
+
+  // タブの表示制御
+  document.querySelectorAll(".tab-btn").forEach(btn=>{
+    const roles = (btn.dataset.roles||"").split(",");
+    if(roles.includes(role)){
+      btn.style.display = "";
+    } else {
+      btn.style.display = "none";
+    }
+  });
+
+  // 運営以外には運営専用タブのコンテンツに警告を埋め込む（万一URLや直接表示された場合の保険）
+  applyAdminOnlyWarning();
+
+  // 最初に見えるタブをアクティブに切り替え
+  const activeBtn = document.querySelector(".tab-btn.active");
+  if(!activeBtn || activeBtn.style.display==="none"){
+    const firstVisible = Array.from(document.querySelectorAll(".tab-btn")).find(b=>b.style.display!=="none");
+    if(firstVisible){
+      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(s=>s.classList.remove("active"));
+      firstVisible.classList.add("active");
+      document.getElementById("tab-"+firstVisible.dataset.tab).classList.add("active");
+    }
+  }
+
+  renderAll();
+}
+
+function applyAdminOnlyWarning(){
+  // 既存の警告を削除
+  document.querySelectorAll(".admin-only-warn[data-injected='1']").forEach(el=>el.remove());
+  if(!userRole) return;
+  const role = userRole.role;
+  document.querySelectorAll(".tab-btn").forEach(btn=>{
+    const roles = (btn.dataset.roles||"").split(",");
+    const tabId = "tab-"+btn.dataset.tab;
+    const section = document.getElementById(tabId);
+    if(!section) return;
+    // この role がアクセスできない場合は警告を埋め込む
+    if(!roles.includes(role)){
+      const warn = document.createElement("div");
+      warn.className = "admin-only-warn";
+      warn.dataset.injected = "1";
+      warn.innerHTML = `
+        <div class="big">🚧 運営専用画面です</div>
+        <div class="small">この画面は運営スタッフのみが操作します。参加者の方は操作しないでください。<br>右上の「モード変更」から自分のモードに戻ってください。</div>
+      `;
+      section.insertBefore(warn, section.firstChild);
+    }
+  });
+}
+function isAdmin(){ return userRole && userRole.role==="admin"; }
+function isTeam(){ return userRole && userRole.role==="team"; }
+function isPlayer(){ return userRole && userRole.role==="player"; }
+function isProjector(){ return userRole && userRole.role==="projector"; }
+
+
+/* ============================================================
+   タブ切替
+   ============================================================ */
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    // ロールの権限チェック (非表示でも念のため)
+    if(userRole){
+      const roles = (btn.dataset.roles||"").split(",");
+      if(!roles.includes(userRole.role)){
+        alert("このタブは "+userRole.role+" モードでは利用できません。\n運営の方は「モード変更」から運営モードに切り替えてください。");
+        return;
+      }
+    }
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(s=>s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+    renderAll();
+  });
+});
+
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
+function esc(s){
+  return String(s==null?"":s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function teamFlag(name){
+  const t = data.teams.find(t=>t.name===name);
+  return t ? t.flag : "";
+}
+function teamLabel(name){
+  return teamFlag(name) + " " + name;
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ============================================================
+   ダッシュボード
+   ============================================================ */
+function renderDashboard(){
+  const wrap = document.getElementById("dash-area");
+  // 各チームの人数
+  const teamCards = data.teams.map(t=>{
+    const memberCount = data.players.filter(p=>p.team===t.name).length;
+    const qCount = data.questions.filter(q=>q.team===t.name).length;
+    return `
+      <div class="dash-card green">
+        <h3><span class="team-flag">${t.flag}</span> ${esc(t.name)}</h3>
+        <ul>
+          <li>👥 メンバー: <strong>${memberCount}名</strong></li>
+          <li>✏️ 作成問題: <strong>${qCount}問</strong></li>
+        </ul>
+      </div>
+    `;
+  }).join("");
+
+  const ongoing = data.matches.filter(m=>m.status==="進行中");
+  const upcoming = data.matches.filter(m=>m.status==="未開始");
+  const nowMatch = ongoing[0] ? `<li><strong>${esc(ongoing[0].name)}</strong><br>${teamLabel(ongoing[0].teamA)} vs ${teamLabel(ongoing[0].teamB)}</li>` : `<li style="color:#888;">現在進行中の試合はありません</li>`;
+  const nextMatch = upcoming[0] ? `<li><strong>${esc(upcoming[0].name)}</strong><br>${teamLabel(upcoming[0].teamA)} vs ${teamLabel(upcoming[0].teamB)}</li>` : `<li style="color:#888;">予定されている試合はありません</li>`;
+
+  // 個人トップ3 (平均点ベース)
+  const ranking = getRanking();
+  const top3 = ranking.slice(0,3).map((p,i)=>
+    `<li>${["🥇","🥈","🥉"][i]} <strong>${esc(p.name)}</strong> <span style="color:#666;">${esc(p.team)}</span> — 平均 ${p.avg.toFixed(2)} (${p.pct}%)</li>`
+  ).join("") || `<li style="color:#888;">まだデータがありません</li>`;
+
+  // MVP トップ3
+  const mvp = getMVPRanking().slice(0,3).map((m,i)=>
+    `<li>${["🥇","🥈","🥉"][i]} <strong>${esc(m.name)}</strong> — ${m.count}票</li>`
+  ).join("") || `<li style="color:#888;">まだ投票がありません</li>`;
+
+  wrap.innerHTML = `
+    <div class="dash-grid">
+      ${teamCards}
+    </div>
+    <div class="dash-grid" style="margin-top:16px;">
+      <div class="dash-card gold">
+        <h3>🔥 現在進行中の試合</h3>
+        <ul>${nowMatch}</ul>
+      </div>
+      <div class="dash-card">
+        <h3>⏭ 次の試合</h3>
+        <ul>${nextMatch}</ul>
+      </div>
+      <div class="dash-card gold">
+        <h3>🏅 個人得点トップ3 (平均点)</h3>
+        <ul>${top3}</ul>
+      </div>
+      <div class="dash-card">
+        <h3>⭐ MVP得票トップ3</h3>
+        <ul>${mvp}</ul>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   チーム & 参加者編集
+   ============================================================ */
+/* ============================================================
+   質問マスタ編集
+   ============================================================ */
+function renderQMaster(){
+  const wrap = document.getElementById("qmaster-list");
+  if(!wrap) return;
+  if(data.questionMaster.length === 0){
+    wrap.innerHTML = `<div class="empty">質問がありません。「＋ 質問を追加」から追加してください。</div>`;
+    return;
+  }
+  wrap.innerHTML = data.questionMaster.map((q, i) => `
+    <div class="qmaster-row" id="qmr-${i}">
+      <span class="qmaster-num">Q${i+1}</span>
+      <input type="text" class="qmaster-input" value="${esc(q)}"
+        onchange="updateQMaster(${i}, this.value)"
+        onblur="updateQMaster(${i}, this.value)">
+      <div class="qmaster-actions">
+        <button class="btn btn-small btn-ghost" title="上へ" onclick="moveQMaster(${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button class="btn btn-small btn-ghost" title="下へ" onclick="moveQMaster(${i},1)" ${i===data.questionMaster.length-1?'disabled':''}>▼</button>
+        <button class="btn btn-small btn-danger" onclick="deleteQMaster(${i})">削除</button>
+      </div>
+    </div>
+  `).join("");
+}
+function updateQMaster(i, val){
+  const v = val.trim();
+  if(!v){ alert("質問文を入力してください"); renderQMaster(); return; }
+  data.questionMaster[i] = v;
+  saveData();
+  // 問題作成フォームの選択肢も更新
+  fillQuestionForm();
+}
+function moveQMaster(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= data.questionMaster.length) return;
+  [data.questionMaster[i], data.questionMaster[j]] = [data.questionMaster[j], data.questionMaster[i]];
+  // 既存の作成済み問題のqIndexも追従させる
+  data.questions.forEach(q => {
+    if(q.qIndex === i) q.qIndex = j;
+    else if(q.qIndex === j) q.qIndex = i;
+  });
+  saveData();
+  renderQMaster();
+  fillQuestionForm();
+}
+function deleteQMaster(i){
+  const q = data.questionMaster[i];
+  // この質問を使っている作成済み問題があるか確認
+  const using = data.questions.filter(x => x.qIndex === i);
+  if(using.length > 0){
+    if(!confirm(`「${q}」を削除しますか？\n\nこの質問を使って作成された問題が${using.length}件あります。それらの問題も一緒に削除されます。`)) return;
+    data.questions = data.questions.filter(x => x.qIndex !== i);
+    // 試合の使用問題リストからも除去
+    const deletedIds = data.questions.filter(x => x.qIndex === i).map(x => x.id);
+    data.matches.forEach(m => {
+      m.questionIds = (m.questionIds||[]).filter(qid => !deletedIds.includes(qid));
+    });
+  } else {
+    if(!confirm(`「${q}」を削除しますか？`)) return;
+  }
+  data.questionMaster.splice(i, 1);
+  // 残っている問題のqIndexを調整
+  data.questions.forEach(q => { if(q.qIndex > i) q.qIndex--; });
+  saveData();
+  renderAll();
+}
+function addQMaster(){
+  const text = prompt("新しい質問文を入力してください：");
+  if(!text || !text.trim()) return;
+  data.questionMaster.push(text.trim());
+  saveData();
+  renderAll();
+  // スクロールして末尾を表示
+  setTimeout(()=>{
+    const last = document.getElementById(`qmr-${data.questionMaster.length-1}`);
+    if(last) last.scrollIntoView({behavior:"smooth", block:"center"});
+  }, 200);
+}
+
+function renderTeamEditor(){
+  const wrap = document.getElementById("team-editor");
+  wrap.innerHTML = "";
+  data.teams.forEach((t,i)=>{
+    const row = document.createElement("div");
+    row.className = "editor-item";
+    row.innerHTML = `
+      <span style="width:26px;color:#666;">#${i+1}</span>
+      <input type="text" value="${esc(t.flag)}" data-i="${i}" data-key="flag" style="flex:0 0 70px;text-align:center;font-size:18px;">
+      <input type="text" value="${esc(t.name)}" data-i="${i}" data-key="name">
+      <button class="btn btn-small btn-danger" data-i="${i}">削除</button>
+    `;
+    row.querySelectorAll("input").forEach(el=>{
+      el.addEventListener("change", e=>{
+        const idx = +e.target.dataset.i, k = e.target.dataset.key, v = e.target.value;
+        if(k==="name" && !v.trim()){ alert("チーム名を入力してください"); renderTeamEditor(); return; }
+        const old = data.teams[idx].name;
+        data.teams[idx][k] = v;
+        if(k==="name"){
+          data.players.forEach(p=>{ if(p.team===old) p.team=v; });
+          data.matches.forEach(m=>{
+            if(m.teamA===old) m.teamA=v;
+            if(m.teamB===old) m.teamB=v;
+          });
+          data.questions.forEach(q=>{ if(q.team===old) q.team=v; });
+        }
+        saveData(); renderAll();
+      });
+    });
+    row.querySelector("button").addEventListener("click", e=>{
+      if(!confirm("このチームを削除しますか？")) return;
+      data.teams.splice(+e.target.dataset.i, 1);
+      saveData(); renderAll();
+    });
+    wrap.appendChild(row);
+  });
+}
+function addTeam(){
+  data.teams.push({name:"新チーム", flag:"🏳"});
+  saveData(); renderAll();
+}
+
+function renderPlayerEditor(){
+  const wrap = document.getElementById("player-editor");
+  wrap.innerHTML = "";
+  data.players.forEach((p,i)=>{
+    const row = document.createElement("div");
+    row.className = "editor-item";
+    row.innerHTML = `
+      <span style="width:30px;color:#666;font-size:12px;">#${i+1}</span>
+      <input type="text" value="${esc(p.name)}" data-i="${i}" data-key="name" placeholder="氏名">
+      <select data-i="${i}" data-key="team" style="flex:0 0 200px;">
+        ${data.teams.map(t=>`<option value="${esc(t.name)}" ${t.name===p.team?"selected":""}>${t.flag} ${esc(t.name)}</option>`).join("")}
+      </select>
+      <button class="btn btn-small btn-danger" data-i="${i}">削除</button>
+    `;
+    row.querySelectorAll("input,select").forEach(el=>{
+      el.addEventListener("change", e=>{
+        const i = +e.target.dataset.i, k = e.target.dataset.key, v = e.target.value.trim();
+        if(k==="name" && !v){ alert("氏名を入力してください"); renderPlayerEditor(); return; }
+        const oldName = data.players[i].name;
+        data.players[i][k] = v;
+        if(k==="name"){
+          data.questions.forEach(q=>{ if(q.member===oldName) q.member=v; });
+          data.answers.forEach(a=>{ if(a.ansPlayer===oldName) a.ansPlayer=v; });
+          data.votes.forEach(o=>{
+            if(o.voter===oldName) o.voter=v;
+            if(o.candidate===oldName) o.candidate=v;
+          });
+        }
+        saveData(); renderAll();
+      });
+    });
+    row.querySelector("button").addEventListener("click", e=>{
+      if(!confirm("この参加者を削除しますか？")) return;
+      data.players.splice(+e.target.dataset.i, 1);
+      saveData(); renderAll();
+    });
+    wrap.appendChild(row);
+  });
+}
+function addPlayer(){
+  data.players.push({name:"新規参加者", team:data.teams[0]?.name||""});
+  saveData(); renderAll();
+}
+
+/* ============================================================
+   問題作成
+   ============================================================ */
+function fillQuestionForm(){
+  // チームバナー表示（チームモード時）
+  const banner = document.getElementById("qmake-team-banner");
+  if(isTeam()){
+    banner.innerHTML = `
+      <div class="team-banner">
+        <div class="flag">${teamFlag(userRole.team)}</div>
+        <div>
+          <div class="label">YOUR TEAM</div>
+          <div class="name">${esc(userRole.team)} の問題作成</div>
+        </div>
+      </div>
+    `;
+  } else {
+    banner.innerHTML = "";
+  }
+
+  // 作成チームリスト
+  const tSel = document.getElementById("qf-team");
+  const currentTeam = tSel.value;
+  if(isTeam()){
+    // チームモード: 自チーム固定
+    tSel.innerHTML = `<option value="${esc(userRole.team)}">${teamFlag(userRole.team)} ${esc(userRole.team)}</option>`;
+    tSel.value = userRole.team;
+    tSel.disabled = true;
+  } else {
+    tSel.disabled = false;
+    tSel.innerHTML = `<option value="">選択</option>` +
+      data.teams.map(t=>`<option value="${esc(t.name)}" ${currentTeam===t.name?"selected":""}>${t.flag} ${esc(t.name)}</option>`).join("");
+  }
+  // 質問マスタ
+  const qSel = document.getElementById("qf-question");
+  const currentQ = qSel.value;
+  qSel.innerHTML = `<option value="">選択</option>` +
+    data.questionMaster.map((q,i)=>`<option value="${i}" ${String(i)===currentQ?"selected":""}>Q${i+1}. ${esc(q)}</option>`).join("");
+  updateMemberSelect();
+}
+function updateMemberSelect(){
+  const team = document.getElementById("qf-team").value;
+  const mSel = document.getElementById("qf-member");
+  const currentM = mSel.value;
+  const members = data.players.filter(p=>p.team===team);
+  mSel.innerHTML = `<option value="">選択</option>` +
+    members.map(p=>`<option value="${esc(p.name)}" ${currentM===p.name?"selected":""}>${esc(p.name)}</option>`).join("");
+}
+document.addEventListener("change", e=>{
+  if(e.target.id==="qf-team") updateMemberSelect();
+});
+
+function renderQMakeProgress(){
+  const wrap = document.getElementById("qmake-progress");
+  const teamList = isTeam() ? data.teams.filter(t=>t.name===userRole.team) : data.teams;
+  wrap.innerHTML = teamList.map(t=>{
+    const c = data.questions.filter(q=>q.team===t.name).length;
+    return `<div class="pill">${t.flag} ${esc(t.name)} : ${c}問</div>`;
+  }).join("");
+}
+
+function saveQuestion(){
+  const team    = document.getElementById("qf-team").value;
+  const member  = document.getElementById("qf-member").value;
+  const qIndex  = document.getElementById("qf-question").value;
+  const a       = document.getElementById("qf-a").value.trim();
+  const b       = document.getElementById("qf-b").value.trim();
+  const c       = document.getElementById("qf-c").value.trim();
+  const d       = document.getElementById("qf-d").value.trim();
+  const correct = document.getElementById("qf-correct").value;
+  const note    = document.getElementById("qf-note").value.trim();
+  const editingId = document.getElementById("qf-editing-id").value;
+
+  if(!team||!member||qIndex===""||!a||!b||!c||!d||!correct){
+    alert("作成チーム・対象メンバー・質問・全選択肢・正解は必須です"); return;
+  }
+  if(isTeam() && team !== userRole.team){
+    alert("自チームの問題のみ作成できます"); return;
+  }
+  const rec = {
+    id: editingId || uid(),
+    team, member, qIndex:+qIndex,
+    a, b, c, d, correct, note
+  };
+  if(editingId){
+    const idx = data.questions.findIndex(q=>q.id===editingId);
+    if(idx>=0) data.questions[idx] = rec;
+  } else {
+    data.questions.push(rec);
+  }
+  saveData();
+  cancelEditQuestion();
+  renderAll();
+}
+function cancelEditQuestion(){
+  document.getElementById("qf-editing-id").value = "";
+  document.getElementById("qf-cancel-btn").style.display = "none";
+  document.getElementById("qf-save-btn").textContent = "💾 保存";
+  ["qf-a","qf-b","qf-c","qf-d","qf-note"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("qf-correct").value = "";
+}
+function editQuestion(id){
+  const q = data.questions.find(x=>x.id===id);
+  if(!q) return;
+  if(isTeam() && q.team !== userRole.team){
+    alert("他チームの問題は編集できません"); return;
+  }
+  document.getElementById("qf-team").value = q.team;
+  updateMemberSelect();
+  document.getElementById("qf-member").value = q.member;
+  document.getElementById("qf-question").value = q.qIndex;
+  document.getElementById("qf-a").value = q.a;
+  document.getElementById("qf-b").value = q.b;
+  document.getElementById("qf-c").value = q.c;
+  document.getElementById("qf-d").value = q.d;
+  document.getElementById("qf-correct").value = q.correct;
+  document.getElementById("qf-note").value = q.note||"";
+  document.getElementById("qf-editing-id").value = id;
+  document.getElementById("qf-cancel-btn").style.display = "";
+  document.getElementById("qf-save-btn").textContent = "💾 更新";
+  window.scrollTo({top:document.getElementById("tab-qmake").offsetTop, behavior:"smooth"});
+}
+function deleteQuestion(id){
+  if(!id){ alert("問題IDが不正です"); return; }
+  const q = data.questions.find(x=>x.id===id);
+  if(!q){ alert("この問題は既に削除されているか見つかりません"); return; }
+  if(isTeam() && q.team !== userRole.team){
+    alert("他チームの問題は削除できません"); return;
+  }
+  if(!confirm("この問題を削除しますか？\n\n対象: " + q.member + " / " + (data.questionMaster[q.qIndex]||""))) return;
+  data.questions = data.questions.filter(x=>x.id!==id);
+  // 試合で使用中の問題リストからも除去
+  data.matches.forEach(m=>{ m.questionIds = (m.questionIds||[]).filter(qid=>qid!==id); });
+  saveData(); renderAll();
+}
+
+function renderQList(){
+  const wrap = document.getElementById("qlist-area");
+  // チームモードは自チームの問題だけ表示
+  const visibleQuestions = isTeam()
+    ? data.questions.filter(q=>q.team===userRole.team)
+    : data.questions;
+  if(visibleQuestions.length===0){
+    wrap.innerHTML = `<div class="empty">${isTeam()?"自チームの問題はまだありません":"まだ問題がありません"}</div>`;
+    return;
+  }
+  // 同じ対象メンバーが「ある試合の中で」重複していたら警告するため、まずは試合での使用状況をマップ
+  const memberInMatch = {}; // matchId -> {memberName:count}
+  data.matches.forEach(m=>{
+    memberInMatch[m.id] = {};
+    m.questionIds.forEach(qid=>{
+      const q = data.questions.find(x=>x.id===qid);
+      if(q){
+        memberInMatch[m.id][q.member] = (memberInMatch[m.id][q.member]||0) + 1;
+      }
+    });
+  });
+
+  wrap.innerHTML = `
+    ${isTeam()?`<div class="warn" style="margin-bottom:10px;">🔒 自チーム(${esc(userRole.team)})の問題のみ表示中。他チームの問題は閲覧できません。</div>`:""}
+    <table>
+      <thead>
+        <tr>
+          <th>作成チーム</th><th>対象メンバー</th><th>質問</th>
+          <th>A</th><th>B</th><th>C</th><th>D</th><th>正解</th><th>使用試合</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${visibleQuestions.map(q=>{
+          const qText = data.questionMaster[q.qIndex] || "(削除済み)";
+          // この問題が使われている試合
+          const inMatches = data.matches.filter(m=>m.questionIds.includes(q.id));
+          // 同試合内の対象メンバー重複警告
+          const warns = inMatches.filter(m=>memberInMatch[m.id][q.member]>1).map(m=>m.name);
+          return `
+            <tr>
+              <td>${teamFlag(q.team)} ${esc(q.team)}</td>
+              <td><strong>${esc(q.member)}</strong></td>
+              <td style="text-align:left;max-width:300px;">${esc(qText)}</td>
+              <td>${esc(q.a)}</td><td>${esc(q.b)}</td><td>${esc(q.c)}</td><td>${esc(q.d)}</td>
+              <td><strong style="color:var(--gold-deep);">${q.correct}</strong></td>
+              <td>
+                ${inMatches.map(m=>esc(m.name)).join("<br>")||'<span style="color:#888;">未使用</span>'}
+                ${warns.length?`<div style="color:#dc2626;font-size:12px;margin-top:4px;">⚠ ${esc(warns.join("/"))}で対象メンバー重複</div>`:""}
+              </td>
+              <td>
+                <button class="btn btn-small btn-blue" onclick="editQuestion('${q.id}')">編集</button>
+                <button class="btn btn-small btn-danger" onclick="deleteQuestion('${q.id}')">削除</button>
+              </td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+/* ============================================================
+   試合設定
+   ============================================================ */
+function renderMatches(){
+  const wrap = document.getElementById("match-area");
+  if(data.matches.length===0){
+    wrap.innerHTML = `<div class="empty">試合がありません</div>`;
+    return;
+  }
+  wrap.innerHTML = data.matches.map((m,idx)=>{
+    // この試合の使用問題で、対象メンバーの重複チェック
+    const memberCount = {};
+    m.questionIds.forEach(qid=>{
+      const q = data.questions.find(x=>x.id===qid);
+      if(q) memberCount[q.member] = (memberCount[q.member]||0)+1;
+    });
+    const dupMembers = Object.entries(memberCount).filter(([k,v])=>v>1).map(([k])=>k);
+
+    return `
+      <div class="match-card">
+        <div class="match-head">
+          <input type="text" value="${esc(m.name)}" data-i="${idx}" data-key="name" style="flex:0 0 160px;font-size:18px;font-weight:bold;">
+          <select data-i="${idx}" data-key="teamA" style="flex:0 0 180px;">
+            ${data.teams.map(t=>`<option value="${esc(t.name)}" ${t.name===m.teamA?"selected":""}>${t.flag} ${esc(t.name)}</option>`).join("")}
+          </select>
+          <span style="font-weight:bold;font-size:18px;">VS</span>
+          <select data-i="${idx}" data-key="teamB" style="flex:0 0 180px;">
+            ${data.teams.map(t=>`<option value="${esc(t.name)}" ${t.name===m.teamB?"selected":""}>${t.flag} ${esc(t.name)}</option>`).join("")}
+          </select>
+          <select data-i="${idx}" data-key="status" style="flex:0 0 140px;">
+            <option ${m.status==='未開始'?'selected':''}>未開始</option>
+            <option ${m.status==='進行中'?'selected':''}>進行中</option>
+            <option ${m.status==='終了'?'selected':''}>終了</option>
+          </select>
+          <span class="status ${m.status==='進行中'?'ongoing':m.status==='終了'?'finished':'notstarted'}">${esc(m.status)}</span>
+          <button class="btn btn-small btn-danger" onclick="deleteMatch(${idx})">この試合を削除</button>
+        </div>
+
+        <h3>使用する問題（チェックで追加）</h3>
+        ${dupMembers.length?`<div class="warn">⚠ 同じ対象メンバーが複数問選ばれています: ${esc(dupMembers.join(", "))}</div>`:""}
+        <div class="form-row" style="margin-bottom:8px;">
+          <span style="font-size:13px;color:#666;">フィルタ:</span>
+          <select onchange="filterMatchQuestions(this,${idx})" style="flex:0 0 200px;">
+            <option value="">全チーム</option>
+            ${data.teams.map(t=>`<option value="${esc(t.name)}">${t.flag} ${esc(t.name)}</option>`).join("")}
+          </select>
+        </div>
+        <div id="match-q-list-${idx}">
+          ${renderMatchQuestionCheckboxes(m, idx, "")}
+        </div>
+
+        <div class="row-actions">
+          <button class="btn btn-gold btn-large" onclick="startProjectionFromMatch('${m.id}')">▶ 投影モードで開始</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // 試合フィールド変更
+  document.querySelectorAll(".match-card input[data-key], .match-card select[data-key]").forEach(el=>{
+    el.addEventListener("change", e=>{
+      const i = +e.target.dataset.i, k = e.target.dataset.key, v = e.target.value;
+      data.matches[i][k] = v;
+      saveData(); renderAll();
+    });
+  });
+}
+function renderMatchQuestionCheckboxes(m, idx, filterTeam){
+  const list = data.questions.filter(q=>!filterTeam || q.team===filterTeam);
+  if(list.length===0) return `<div class="empty">該当する問題がありません</div>`;
+  return list.map(q=>{
+    const checked = m.questionIds.includes(q.id);
+    const qText = data.questionMaster[q.qIndex]||"(削除済み)";
+    return `
+      <label class="q-list-item" style="cursor:pointer;">
+        <input type="checkbox" ${checked?"checked":""}
+          onchange="toggleMatchQuestion(${idx}, '${q.id}', this.checked)" style="width:20px;height:20px;">
+        <span class="qtxt">${teamFlag(q.team)} <strong>${esc(q.member)}</strong> — ${esc(qText)}</span>
+        <span class="qmeta">A:${esc(q.a)} / B:${esc(q.b)} / C:${esc(q.c)} / D:${esc(q.d)}</span>
+      </label>
+    `;
+  }).join("");
+}
+function filterMatchQuestions(sel, idx){
+  document.getElementById(`match-q-list-${idx}`).innerHTML = renderMatchQuestionCheckboxes(data.matches[idx], idx, sel.value);
+}
+function toggleMatchQuestion(idx, qid, checked){
+  const m = data.matches[idx];
+  if(checked){
+    if(!m.questionIds.includes(qid)) m.questionIds.push(qid);
+  } else {
+    m.questionIds = m.questionIds.filter(x=>x!==qid);
+  }
+  saveData();
+  // ダッシュボード等の更新だけ。チェックボックス自体は維持
+  renderDashboard();
+  renderMatches();
+}
+function addMatch(){
+  data.matches.push({
+    id: uid(),
+    name:`試合${data.matches.length+1}`,
+    teamA:data.teams[0]?.name||"",
+    teamB:data.teams[1]?.name||data.teams[0]?.name||"",
+    questionIds:[],
+    status:"未開始"
+  });
+  saveData(); renderAll();
+}
+function deleteMatch(idx){
+  if(!confirm("この試合を削除しますか？")) return;
+  const m = data.matches[idx];
+  data.matches.splice(idx,1);
+  data.answers = data.answers.filter(a=>a.matchId!==m.id);
+  saveData(); renderAll();
+}
+
+/* ============================================================
+   投影モード
+   ============================================================ */
+let projState = {
+  matchId:null,
+  qPos:0, // 0-based
+  selectedAnsId:null, // 現在表示中の問題に対する一時回答(未確定)
+  revealed:false // 現問題で正解発表済みか
+};
+
+function renderProjMatchSelect(){
+  const sel = document.getElementById("proj-match-select");
+  sel.innerHTML = data.matches.map(m=>`<option value="${m.id}">${esc(m.name)} : ${teamLabel(m.teamA)} vs ${teamLabel(m.teamB)} (${m.questionIds.length}問)</option>`).join("");
+}
+function startProjection(){
+  const id = document.getElementById("proj-match-select").value;
+  startProjectionFromMatch(id);
+}
+function startProjectionFromMatch(matchId){
+  const m = data.matches.find(x=>x.id===matchId);
+  if(!m){ alert("試合が見つかりません"); return; }
+  if(m.questionIds.length===0){ alert("この試合には問題が設定されていません"); return; }
+  // ステータス進行中
+  m.status = "進行中";
+  saveData();
+
+  projState.matchId = matchId;
+  projState.qPos = 0;
+  projState.selectedAnsId = null;
+  projState.revealed = false;
+  document.getElementById("projector").classList.add("active");
+  renderProjector();
+}
+function closeProjection(){
+  document.getElementById("projector").classList.remove("active");
+}
+function getCurrentMatch(){
+  return data.matches.find(x=>x.id===projState.matchId);
+}
+function getCurrentQuestion(){
+  const m = getCurrentMatch();
+  if(!m) return null;
+  const qid = m.questionIds[projState.qPos];
+  return data.questions.find(q=>q.id===qid);
+}
+function getMatchScore(matchId, teamName){
+  return data.answers
+    .filter(a=>a.matchId===matchId && a.ansTeam===teamName && a.result==="正解")
+    .length;
+}
+
+function renderProjector(){
+  const m = getCurrentMatch();
+  if(!m){ closeProjection(); return; }
+  document.getElementById("pm-name").textContent = m.name;
+  document.getElementById("pm-teamA").textContent = teamLabel(m.teamA);
+  document.getElementById("pm-teamB").textContent = teamLabel(m.teamB);
+  document.getElementById("pm-scoreA").textContent = getMatchScore(m.id, m.teamA);
+  document.getElementById("pm-scoreB").textContent = getMatchScore(m.id, m.teamB);
+  document.getElementById("pm-qpos").textContent = projState.qPos+1;
+  document.getElementById("pm-qtotal").textContent = m.questionIds.length;
+
+  const q = getCurrentQuestion();
+  if(!q){
+    document.getElementById("pm-question").textContent = "(問題がありません)";
+    document.getElementById("pm-choices").innerHTML = "";
+    document.getElementById("pm-team-answers").innerHTML = "";
+    if(data.activeQuestion !== null){
+      data.activeQuestion = null;
+      saveData();
+    }
+    return;
+  }
+  // 個人回答画面に配信する現在の出題情報を保存(変更があった時のみ)
+  const newActive = {matchId:m.id, questionId:q.id};
+  if(!data.activeQuestion || data.activeQuestion.matchId !== newActive.matchId || data.activeQuestion.questionId !== newActive.questionId){
+    data.activeQuestion = newActive;
+    saveData();
+  }
+
+  document.getElementById("pm-quizteam").textContent = teamLabel(q.team);
+  document.getElementById("pm-member").textContent = q.member;
+  const qText = data.questionMaster[q.qIndex]||"(質問が見つかりません)";
+  document.getElementById("pm-question").textContent = qText;
+
+  // この問題に対する確定済み回答(あれば)
+  const existAns = data.answers.find(a=>a.matchId===m.id && a.questionId===q.id);
+  projState.revealed = !!(existAns && existAns.revealed);
+
+  // チーム回答の大きな表示
+  const tAnsWrap = document.getElementById("pm-team-answers");
+  if(existAns){
+    let cls = "";
+    if(projState.revealed){
+      cls = (existAns.result==="正解") ? "correct" : "wrong";
+    }
+    tAnsWrap.innerHTML = `
+      <div class="proj-team-answer ${cls}">
+        <div class="pt-team">${teamLabel(existAns.ansTeam)}</div>
+        <div class="pt-letter">${esc(existAns.answer)}</div>
+        <div class="pt-player">${esc(existAns.ansPlayer)}</div>
+      </div>
+    `;
+  } else {
+    tAnsWrap.innerHTML = "";
+  }
+
+  // 正誤切替ボタンの状態
+  const okBtn = document.getElementById("vc-ok-btn");
+  const ngBtn = document.getElementById("vc-ng-btn");
+  if(okBtn && ngBtn){
+    okBtn.classList.toggle("active", !!(existAns && existAns.revealed && existAns.result==="正解"));
+    ngBtn.classList.toggle("active", !!(existAns && existAns.revealed && existAns.result==="不正解"));
+  }
+
+  const letters = ["A","B","C","D"];
+  document.getElementById("pm-choices").innerHTML = letters.map(L=>{
+    let cls = "";
+    let userTag = "";
+    if(projState.revealed){
+      if(L===q.correct) cls += " correct";
+      if(existAns && existAns.answer===L){
+        cls += (existAns.result==="正解" ? "" : " user-wrong");
+        userTag = `<div class="user-tag">${esc(existAns.ansTeam)} / ${esc(existAns.ansPlayer)}</div>`;
+      }
+    } else if(existAns && existAns.answer===L){
+      cls += " user-selected";
+      userTag = `<div class="user-tag">${esc(existAns.ansTeam)} / ${esc(existAns.ansPlayer)}</div>`;
+    }
+    return `
+      <div class="proj-choice${cls}">
+        ${userTag}
+        <div class="letter">${L}</div>
+        <div>${esc(q[L.toLowerCase()])}</div>
+      </div>
+    `;
+  }).join("");
+
+  // 操作プルダウン
+  const ansTeamSel = document.getElementById("pm-ansteam");
+  const currentAT = existAns ? existAns.ansTeam : ansTeamSel.value;
+  ansTeamSel.innerHTML = `<option value="">--</option>` +
+    [m.teamA, m.teamB].map(t=>`<option value="${esc(t)}" ${t===currentAT?"selected":""}>${teamLabel(t)}</option>`).join("");
+  updateProjPlayerSelect();
+  if(existAns){
+    document.getElementById("pm-ansplayer").value = existAns.ansPlayer;
+    document.getElementById("pm-ansvalue").value = existAns.answer;
+  } else {
+    document.getElementById("pm-ansvalue").value = "";
+  }
+}
+function updateProjPlayerSelect(){
+  const t = document.getElementById("pm-ansteam").value;
+  const sel = document.getElementById("pm-ansplayer");
+  const current = sel.value;
+  const players = data.players.filter(p=>p.team===t);
+  sel.innerHTML = `<option value="">--</option>` +
+    players.map(p=>`<option value="${esc(p.name)}" ${current===p.name?"selected":""}>${esc(p.name)}</option>`).join("");
+}
+document.addEventListener("change", e=>{
+  if(e.target.id==="pm-ansteam") updateProjPlayerSelect();
+});
+
+function submitProjAnswer(){
+  const m = getCurrentMatch(), q = getCurrentQuestion();
+  if(!m||!q) return;
+  const ansTeam = document.getElementById("pm-ansteam").value;
+  const ansPlayer = document.getElementById("pm-ansplayer").value;
+  const answer = document.getElementById("pm-ansvalue").value;
+  if(!ansTeam||!ansPlayer||!answer){ alert("回答チーム・回答者・回答を選択してください"); return; }
+
+  // 既存の回答があれば置き換え（運営は判定済みでも修正可）
+  const existIdx = data.answers.findIndex(a=>a.matchId===m.id && a.questionId===q.id);
+  if(existIdx>=0){
+    data.answers[existIdx].ansTeam = ansTeam;
+    data.answers[existIdx].ansPlayer = ansPlayer;
+    data.answers[existIdx].answer = answer;
+    // 回答内容を変更した場合、判定もリセット（運営が手動で再判定する）
+    data.answers[existIdx].revealed = false;
+    data.answers[existIdx].result = "";
+  } else {
+    data.answers.push({
+      id: uid(),
+      matchId: m.id,
+      questionId: q.id,
+      ansTeam, ansPlayer, answer,
+      correct: q.correct,
+      result: "", // 発表後に決定
+      revealed: false
+    });
+  }
+  saveData();
+  renderProjector();
+}
+
+function revealAnswer(){
+  const m = getCurrentMatch(), q = getCurrentQuestion();
+  if(!m||!q) return;
+  const ans = data.answers.find(a=>a.matchId===m.id && a.questionId===q.id);
+  if(!ans){ alert("先に回答を確定してください"); return; }
+  // 既存ロジック: 回答と正解の自動比較で判定
+  ans.result = (ans.answer===q.correct) ? "正解" : "不正解";
+  ans.revealed = true;
+  syncPlayerAnswersResult(q.id);
+  saveData();
+  renderProjector();
+  playVerdict(ans.result==="正解");
+}
+
+/* 運営による正解/不正解の手動切替 - 何度でも修正可 */
+function setVerdict(result){
+  const m = getCurrentMatch(), q = getCurrentQuestion();
+  if(!m||!q){ alert("試合または問題がありません"); return; }
+  const ans = data.answers.find(a=>a.matchId===m.id && a.questionId===q.id);
+  if(!ans){ alert("先に回答を確定してください"); return; }
+  ans.result = result;
+  ans.revealed = true;
+  syncPlayerAnswersResult(q.id);
+  saveData();
+  renderProjector();
+  playVerdict(result==="正解");
+  // スコアボード等への即時反映のため部分再描画
+  renderScoreboard();
+  renderRanking();
+}
+function undoProjAnswer(){
+  const m = getCurrentMatch(), q = getCurrentQuestion();
+  if(!m||!q) return;
+  const idx = data.answers.findIndex(a=>a.matchId===m.id && a.questionId===q.id);
+  if(idx<0){ alert("この問題にはまだ回答がありません"); return; }
+  if(!confirm("直前の回答を取り消します。よろしいですか？")) return;
+  data.answers.splice(idx,1);
+  saveData();
+  renderProjector();
+}
+function nextQuestion(){
+  const m = getCurrentMatch(); if(!m) return;
+  if(projState.qPos < m.questionIds.length-1){
+    projState.qPos++;
+    renderProjector();
+  } else {
+    if(confirm("最後の問題です。試合を終了しますか？")){
+      m.status = "終了";
+      saveData();
+      renderProjector();
+      renderAll();
+    }
+  }
+}
+function prevQuestion(){
+  if(projState.qPos>0){ projState.qPos--; renderProjector(); }
+}
+
+/* 演出 */
+function playVerdict(isCorrect){
+  const v = document.getElementById("verdict");
+  const t = document.getElementById("verdict-text");
+  v.classList.remove("correct","wrong","show");
+  void v.offsetWidth; // restart
+  if(isCorrect){
+    v.classList.add("correct","show");
+    t.textContent = "GOOOAL!! 正解！";
+    fireConfetti();
+  } else {
+    v.classList.add("wrong","show");
+    t.textContent = "NO GOAL... 不正解！";
+  }
+  setTimeout(()=>{ v.classList.remove("show"); }, 2200);
+}
+function fireConfetti(){
+  const c = document.getElementById("confetti");
+  c.innerHTML = "";
+  c.classList.add("active");
+  const colors = ["#f5c518","#13994f","#1d4ed8","#dc2626","#ffffff","#ff8800"];
+  for(let i=0;i<80;i++){
+    const s = document.createElement("span");
+    s.style.left = Math.random()*100 + "%";
+    s.style.background = colors[Math.floor(Math.random()*colors.length)];
+    s.style.animationDuration = (2 + Math.random()*2) + "s";
+    s.style.animationDelay = (Math.random()*0.6) + "s";
+    s.style.transform = `rotate(${Math.random()*360}deg)`;
+    c.appendChild(s);
+  }
+  setTimeout(()=>{ c.classList.remove("active"); }, 4500);
+}
+
+/* ============================================================
+   スコアボード
+   ============================================================ */
+function renderScoreboard(){
+  const wrap = document.getElementById("scoreboard-area");
+  if(data.matches.length===0){
+    wrap.innerHTML = `<div class="empty">試合がありません</div>`;
+    return;
+  }
+  // 進行中の試合を上部に
+  const ongoing = data.matches.find(m=>m.status==="進行中");
+  let html = "";
+  if(ongoing){
+    const sa = getMatchScore(ongoing.id, ongoing.teamA);
+    const sb = getMatchScore(ongoing.id, ongoing.teamB);
+    html += `
+      <div class="now-match">
+        <div>
+          <div class="nm-name">🔥 ${esc(ongoing.name)} 進行中</div>
+          <div style="margin-top:6px;font-size:16px;color:#ffe89a;">${teamLabel(ongoing.teamA)} vs ${teamLabel(ongoing.teamB)}</div>
+        </div>
+        <div class="nm-score">
+          <span class="num">${sa}</span>
+          <span>-</span>
+          <span class="num">${sb}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  html += data.matches.map(m=>{
+    const sa = getMatchScore(m.id, m.teamA);
+    const sb = getMatchScore(m.id, m.teamB);
+    const total = data.answers.filter(a=>a.matchId===m.id && a.revealed).length;
+    let winnerLabel = "";
+    if(m.status==="終了" || (sa+sb>0)){
+      if(sa>sb) winnerLabel = `👑 勝者: ${teamLabel(m.teamA)}`;
+      else if(sb>sa) winnerLabel = `👑 勝者: ${teamLabel(m.teamB)}`;
+      else if(sa===sb && (sa+sb)>0) winnerLabel = `🤝 同点・MC問題へ`;
+    }
+    return `
+      <div class="pitch-card">
+        <div class="pitch-title">
+          ⚽ ${esc(m.name)}
+          <span class="tag" style="background:rgba(255,255,255,.2);">問題数: ${total} / ${m.questionIds.length}</span>
+          <span class="tag" style="background:rgba(0,0,0,.3);">状態: ${esc(m.status)}</span>
+          ${winnerLabel ? `<span class="winner-tag">${winnerLabel}</span>` : ``}
+        </div>
+        <div class="pitch-scores">
+          <div class="score-pill ${winnerLabel.includes(m.teamA)&&!winnerLabel.includes("同点")?'winner':''}">
+            <span>${teamLabel(m.teamA)}</span><span class="score-num">${sa}</span>
+          </div>
+          <div class="score-pill ${winnerLabel.includes(m.teamB)&&!winnerLabel.includes("同点")?'winner':''}">
+            <span>${teamLabel(m.teamB)}</span><span class="score-num">${sb}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  wrap.innerHTML = html;
+}
+
+/* ============================================================
+   個人ランキング (平均点)
+   ============================================================ */
+function getRanking(){
+  // 個人ランキングは「個人回答(playerAnswers)」のみで集計する
+  // チームを代表した回答(data.answers)は個人ランキングに含めない
+  const map = {};
+  data.players.forEach(p=>{
+    map[p.name] = {name:p.name, team:p.team, total:0, correct:0};
+  });
+  // 個人回答のみカウント
+  data.playerAnswers.forEach(a=>{
+    if(!a.result) return; // 判定済みのみ
+    if(!map[a.playerName]) map[a.playerName] = {name:a.playerName, team:"-", total:0, correct:0};
+    map[a.playerName].total++;
+    if(a.result==="正解") map[a.playerName].correct++;
+  });
+  return Object.values(map)
+    .filter(p=>p.total>0)
+    .map(p=>({
+      ...p,
+      avg: p.correct/p.total,
+      pct: Math.round((p.correct/p.total)*100)
+    }))
+    .sort((a,b)=>{
+      if(b.avg!==a.avg) return b.avg-a.avg;
+      if(b.correct!==a.correct) return b.correct-a.correct;
+      return b.total-a.total;
+    });
+}
+/* ============================================================
+   個人回答機能
+   ============================================================ */
+function renderPlayerAnswer(){
+  const banner = document.getElementById("player-banner-wrap");
+  const area = document.getElementById("player-quiz-area");
+  const hist = document.getElementById("player-history-area");
+  if(!isPlayer() && !isAdmin()){
+    // どちらでもない: ガード（普通ここには来ない）
+    if(banner) banner.innerHTML = "";
+    if(area) area.innerHTML = "";
+    return;
+  }
+
+  // バナー
+  if(isPlayer()){
+    banner.innerHTML = `
+      <div class="player-banner">
+        <div class="flag">📱</div>
+        <div>
+          <div class="label">YOU</div>
+          <div class="name">${esc(userRole.name)} <span style="font-size:14px;color:#ffe89a;">(${teamFlag(userRole.team)} ${esc(userRole.team)})</span></div>
+        </div>
+      </div>
+    `;
+  } else {
+    // 運営も閲覧/テスト用に見られる
+    banner.innerHTML = `
+      <div class="admin-only-warn">
+        <div class="big">🛠️ 運営: 個人回答画面のプレビュー</div>
+        <div class="small">実際の参加者は「個人回答モード」で各自のPC/スマホからアクセスします</div>
+      </div>
+    `;
+  }
+
+  // 現在出題中の問題
+  const active = data.activeQuestion;
+  if(!active){
+    area.innerHTML = `<div class="empty">現在出題中の問題はありません。<br>運営が投影モードを開始するまでお待ちください。</div>`;
+  } else {
+    const q = data.questions.find(x=>x.id===active.questionId);
+    if(!q){
+      area.innerHTML = `<div class="empty">問題情報が見つかりません</div>`;
+    } else {
+      const qText = data.questionMaster[q.qIndex]||"(質問なし)";
+      // 既存回答(自分のもの)
+      const playerName = isPlayer() ? userRole.name : "(プレビュー)";
+      const myAns = isPlayer()
+        ? data.playerAnswers.find(a=>a.playerName===playerName && a.questionId===q.id)
+        : null;
+      // 運営判定済みかどうか(判定後はロック)
+      const teamAns = data.answers.find(a=>a.matchId===active.matchId && a.questionId===q.id);
+      const locked = !!(teamAns && teamAns.revealed);
+
+      area.innerHTML = `
+        <div class="player-quiz-card">
+          <div class="qhead">
+            <span>📍 出題対象: <strong>${esc(q.member)}</strong> さん (${teamFlag(q.team)} ${esc(q.team)})</span>
+            <span>${locked?'🔒 判定済み(回答締切)':'🟢 回答受付中'}</span>
+          </div>
+          <div class="qbody">Q. ${esc(qText)}</div>
+          <div class="choices-grid">
+            ${["A","B","C","D"].map(L=>{
+              const isSel = myAns && myAns.answer===L;
+              const showCorrect = locked && q.correct===L;
+              let cls = isSel ? "selected" : "";
+              if(showCorrect) cls += " selected";
+              return `
+                <button class="choice-btn ${cls}" ${locked||!isPlayer()?'disabled':''} onclick="submitPlayerAnswer('${q.id}','${L}')">
+                  <div class="letter">${L}</div>
+                  <div>${esc(q[L.toLowerCase()])}</div>
+                  ${showCorrect?'<span style="margin-left:auto;color:#16a34a;font-size:20px;">⭐ 正解</span>':''}
+                </button>
+              `;
+            }).join("")}
+          </div>
+          <div class="qfoot">
+            ${myAns?`<span class="player-status">✅ あなたの回答: <strong>${esc(myAns.answer)}</strong>${locked?` / 結果: <strong style="color:${myAns.result==='正解'?'#16a34a':'#dc2626'};">${esc(myAns.result)}</strong>`:''}</span>`:'<span style="color:#888;">まだ回答していません</span>'}
+            <span>${isPlayer()?'回答は何度でも変更できます(運営の判定発表まで)':''}</span>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // 履歴
+  if(isPlayer()){
+    const myHist = data.playerAnswers
+      .filter(a=>a.playerName===userRole.name)
+      .sort((a,b)=>b.ts-a.ts);
+    if(myHist.length===0){
+      hist.innerHTML = `<div class="empty">まだ回答がありません</div>`;
+    } else {
+      hist.innerHTML = `
+        <table>
+          <thead><tr><th>質問</th><th>あなたの回答</th><th>正解</th><th>結果</th></tr></thead>
+          <tbody>
+            ${myHist.map(a=>{
+              const q = data.questions.find(x=>x.id===a.questionId);
+              const qText = q ? (data.questionMaster[q.qIndex]||"") : "(削除済み)";
+              const member = q ? q.member : "-";
+              return `
+                <tr>
+                  <td style="text-align:left;">${esc(member)} へ: ${esc(qText)}</td>
+                  <td><strong>${esc(a.answer)}</strong></td>
+                  <td>${a.result?esc(a.correct):'<span style="color:#888;">判定待ち</span>'}</td>
+                  <td class="${a.result==='正解'?'ok':a.result==='不正解'?'ng':''}">${esc(a.result||'-')}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+  } else {
+    hist.innerHTML = `<div class="empty">運営プレビュー: 個人ごとの回答履歴はその人の画面に表示されます</div>`;
+  }
+}
+
+function submitPlayerAnswer(questionId, letter){
+  if(!isPlayer()){ alert("個人回答モードでログインしてください"); return; }
+  const q = data.questions.find(x=>x.id===questionId);
+  if(!q){ alert("問題が見つかりません"); return; }
+  // 判定済み(運営発表後)はロック
+  const active = data.activeQuestion;
+  if(active){
+    const teamAns = data.answers.find(a=>a.matchId===active.matchId && a.questionId===questionId);
+    if(teamAns && teamAns.revealed){
+      alert("運営の判定が発表されたため、回答を変更できません");
+      return;
+    }
+  }
+  const name = userRole.name;
+  const existIdx = data.playerAnswers.findIndex(a=>a.playerName===name && a.questionId===questionId);
+  const result = ""; // 個人回答は運営判定時に確定する
+  const correctLetter = q.correct;
+  if(existIdx>=0){
+    data.playerAnswers[existIdx].answer = letter;
+    data.playerAnswers[existIdx].correct = correctLetter;
+    data.playerAnswers[existIdx].result = "";
+    data.playerAnswers[existIdx].ts = Date.now();
+  } else {
+    data.playerAnswers.push({
+      id: uid(),
+      playerName: name,
+      questionId, answer:letter, correct:correctLetter,
+      result: "", ts: Date.now()
+    });
+  }
+  saveData();
+  renderPlayerAnswer();
+}
+
+/* 運営が正誤判定したとき、個人回答にも自動反映する補助関数 */
+function syncPlayerAnswersResult(questionId){
+  const q = data.questions.find(x=>x.id===questionId);
+  if(!q) return;
+  data.playerAnswers
+    .filter(a=>a.questionId===questionId)
+    .forEach(a=>{
+      a.correct = q.correct;
+      a.result = (a.answer===q.correct) ? "正解" : "不正解";
+    });
+}
+
+function renderRanking(){
+  const wrap = document.getElementById("ranking-area");
+  const list = getRanking();
+  if(list.length===0){
+    wrap.innerHTML = `<div class="empty">まだ回答データがありません</div>`;
+    return;
+  }
+  let prev = null, rank = 0, shown = 0;
+  const header = `
+    <div class="rank-header">
+      <div>順位</div><div>氏名</div><div>所属</div>
+      <div>回答数</div><div>正解数</div><div>平均点</div><div>正解率</div>
+    </div>
+  `;
+  wrap.innerHTML = header + `<div class="ranking-list">` + list.map(p=>{
+    shown++;
+    // 同率判定: avg+correct+total が同じなら同順位
+    const key = `${p.avg}_${p.correct}_${p.total}`;
+    if(key !== prev){ rank = shown; prev = key; }
+    let cls = "";
+    if(rank===1) cls="gold"; else if(rank===2) cls="silver"; else if(rank===3) cls="bronze";
+    return `
+      <div class="rank-row ${cls}">
+        <div class="rank-num">${rank}位</div>
+        <div class="player">${esc(p.name)}</div>
+        <div class="team">${teamFlag(p.team)} ${esc(p.team||'-')}</div>
+        <div class="num-cell">${p.total}</div>
+        <div class="num-cell">${p.correct}</div>
+        <div class="avg">${p.avg.toFixed(2)}</div>
+        <div class="pct">${p.pct}%</div>
+      </div>
+    `;
+  }).join("") + `</div>`;
+}
+
+/* ============================================================
+   MVP投票
+   ============================================================ */
+function fillVoteSelects(){
+  const voter = document.getElementById("vote-voter");
+  const cand  = document.getElementById("vote-candidate");
+  const opts = data.players.map(p=>`<option value="${esc(p.name)}">${esc(p.name)} (${teamFlag(p.team)} ${esc(p.team)})</option>`).join("");
+  voter.innerHTML = `<option value="">選択</option>` + opts;
+  cand.innerHTML  = `<option value="">選択</option>` + opts;
+}
+function registerVote(){
+  const voter = document.getElementById("vote-voter").value;
+  const cand  = document.getElementById("vote-candidate").value;
+  const reason= document.getElementById("vote-reason").value.trim();
+  if(!voter||!cand||!reason){ alert("全項目を入力してください"); return; }
+  data.votes.push({id:uid(), voter, candidate:cand, reason});
+  saveData();
+  document.getElementById("vote-reason").value = "";
+  renderAll();
+}
+function deleteVote(id){
+  if(!id) return;
+  const v = data.votes.find(x=>x.id===id);
+  if(!v){ alert("この投票は既に削除されています"); return; }
+  if(!confirm("この投票を削除しますか？")) return;
+  data.votes = data.votes.filter(x=>x.id!==id);
+  saveData(); renderAll();
+}
+function getMVPRanking(){
+  const map = {};
+  data.votes.forEach(v=>{
+    if(!map[v.candidate]) map[v.candidate] = {name:v.candidate, count:0, reasons:[]};
+    map[v.candidate].count++;
+    map[v.candidate].reasons.push(v.reason);
+  });
+  return Object.values(map).sort((a,b)=>b.count-a.count);
+}
+function renderMVPArea(){
+  const wrap = document.getElementById("mvp-rank-area");
+  const list = getMVPRanking();
+  if(list.length===0){
+    wrap.innerHTML = `<div class="empty">まだ投票がありません</div>`;
+  } else {
+    let prev = null, rank = 0, shown = 0;
+    wrap.innerHTML = list.map(o=>{
+      shown++;
+      if(o.count!==prev){ rank=shown; prev=o.count; }
+      return `
+        <div class="mvp-card ${rank===1?'rank1':''}">
+          <div class="head">
+            <div><span style="color:#888;margin-right:8px;">${rank}位</span>
+            <span class="name">${rank===1?'⭐ ':''}${esc(o.name)}</span></div>
+            <div class="votes">${o.count} 票</div>
+          </div>
+          <ul class="reasons">${o.reasons.map(r=>`<li>${esc(r)}</li>`).join("")}</ul>
+        </div>
+      `;
+    }).join("");
+  }
+  const t = document.getElementById("votes-table-area");
+  if(data.votes.length===0){
+    t.innerHTML = `<div class="empty">まだ投票がありません</div>`;
+  } else {
+    t.innerHTML = `
+      <table>
+        <thead><tr><th>投票者</th><th>MVP候補</th><th>理由</th><th></th></tr></thead>
+        <tbody>
+          ${data.votes.map(v=>`
+            <tr>
+              <td>${esc(v.voter)}</td>
+              <td>${esc(v.candidate)}</td>
+              <td style="text-align:left;">${esc(v.reason)}</td>
+              <td><button class="btn btn-small btn-danger" onclick="deleteVote('${v.id}')">削除</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+}
+
+/* ============================================================
+   表彰画面
+   ============================================================ */
+let awardStep = 0;
+const AWARD_STEPS = ["runnerup","champion","r3","r2","r1","mvp"];
+
+function savePrizes(){
+  data.prizes = {
+    champion: document.getElementById("prize-champion").value.trim(),
+    runnerup: document.getElementById("prize-runnerup").value.trim(),
+    r1: document.getElementById("prize-r1").value.trim(),
+    r2: document.getElementById("prize-r2").value.trim(),
+    r3: document.getElementById("prize-r3").value.trim(),
+    mvp: document.getElementById("prize-mvp").value.trim()
+  };
+  saveData();
+  alert("景品名を保存しました");
+  renderAward();
+}
+function loadPrizeInputs(){
+  document.getElementById("prize-champion").value = data.prizes.champion||"";
+  document.getElementById("prize-runnerup").value = data.prizes.runnerup||"";
+  document.getElementById("prize-r1").value = data.prizes.r1||"";
+  document.getElementById("prize-r2").value = data.prizes.r2||"";
+  document.getElementById("prize-r3").value = data.prizes.r3||"";
+  document.getElementById("prize-mvp").value = data.prizes.mvp||"";
+}
+function awardNext(){
+  awardStep = (awardStep+1) % AWARD_STEPS.length;
+  renderAward();
+}
+function awardPrev(){
+  awardStep = (awardStep-1+AWARD_STEPS.length) % AWARD_STEPS.length;
+  renderAward();
+}
+function renderAward(){
+  loadPrizeInputs();
+  const wrap = document.getElementById("award-stage-wrap");
+
+  // 決勝
+  const finalMatch = data.matches.find(m=>m.name==="決勝") || data.matches[data.matches.length-1];
+  let champ="未確定", runner="未確定";
+  if(finalMatch){
+    const sa = getMatchScore(finalMatch.id, finalMatch.teamA);
+    const sb = getMatchScore(finalMatch.id, finalMatch.teamB);
+    if(sa>sb){ champ=finalMatch.teamA; runner=finalMatch.teamB; }
+    else if(sb>sa){ champ=finalMatch.teamB; runner=finalMatch.teamA; }
+    else if(sa===0 && sb===0){}
+    else { champ=`${finalMatch.teamA} / ${finalMatch.teamB}`; runner="(同点)"; }
+  }
+  const rank = getRanking();
+  const r1 = rank[0], r2 = rank[1], r3 = rank[2];
+  const mvp = getMVPRanking()[0];
+
+  const step = AWARD_STEPS[awardStep];
+  let html = "";
+  if(step==="runnerup"){
+    html = `
+      <div class="award-stage">
+        <div class="label">🥈 準優勝チーム</div>
+        <div class="big-icon">🥈</div>
+        <div class="name">${runner==="未確定"?"未確定":`${teamFlag(runner)} ${esc(runner)}`}</div>
+        ${data.prizes.runnerup?`<div class="prize">🎁 ${esc(data.prizes.runnerup)}</div>`:""}
+      </div>`;
+  } else if(step==="champion"){
+    html = `
+      <div class="award-stage champion">
+        <div class="label">🏆 優勝チーム CHAMPION</div>
+        <div class="big-icon">🏆</div>
+        <div class="name">${champ==="未確定"?"未確定":`${teamFlag(champ)} ${esc(champ)}`}</div>
+        ${finalMatch?`<div class="sub">${esc(finalMatch.name)} の勝者</div>`:""}
+        ${data.prizes.champion?`<div class="prize">🎁 ${esc(data.prizes.champion)}</div>`:""}
+      </div>`;
+  } else if(step==="r3" || step==="r2" || step==="r1"){
+    const target = step==="r1"?r1:step==="r2"?r2:r3;
+    const label = step==="r1"?"🥇 個人得点 第1位":step==="r2"?"🥈 個人得点 第2位":"🥉 個人得点 第3位";
+    const icon  = step==="r1"?"🥇":step==="r2"?"🥈":"🥉";
+    const prize = step==="r1"?data.prizes.r1:step==="r2"?data.prizes.r2:data.prizes.r3;
+    html = `
+      <div class="award-stage ${step==='r1'?'champion':''}">
+        <div class="label">${label}</div>
+        <div class="big-icon">${icon}</div>
+        <div class="name">${target?esc(target.name):"未確定"}</div>
+        <div class="sub">${target?`${teamFlag(target.team)} ${esc(target.team||'-')} ／ 平均点 ${target.avg.toFixed(2)}（正解率 ${target.pct}%・${target.correct}/${target.total}問）`:""}</div>
+        ${prize?`<div class="prize">🎁 ${esc(prize)}</div>`:""}
+      </div>`;
+  } else if(step==="mvp"){
+    html = `
+      <div class="award-stage mvp">
+        <div class="label">⭐ MVP選手 MOST VALUABLE PLAYER</div>
+        <div class="big-icon">⭐</div>
+        <div class="name">${mvp?esc(mvp.name):"未確定"}</div>
+        <div class="sub">${mvp?`${mvp.count}票獲得`:""}</div>
+        ${data.prizes.mvp?`<div class="prize">🎁 ${esc(data.prizes.mvp)}</div>`:""}
+      </div>`;
+  }
+  // 進行ドット
+  html += `<div class="award-progress">${AWARD_STEPS.map((_,i)=>`<span class="dot ${i===awardStep?'active':''}"></span>`).join("")}</div>`;
+  wrap.innerHTML = html;
+}
+
+/* ============================================================
+   CSV 出力
+   ============================================================ */
+function downloadCSV(filename, rows){
+  const csv = rows.map(r=>r.map(cell=>{
+    let s = cell==null?"":String(cell);
+    if(/[",\n]/.test(s)) s = `"${s.replace(/"/g,'""')}"`;
+    return s;
+  }).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function exportQuestionsCSV(){
+  if(data.questions.length===0){ alert("問題がありません"); return; }
+  const rows = [["作成チーム","対象メンバー","質問番号","質問","選択肢A","選択肢B","選択肢C","選択肢D","正解","補足"]];
+  data.questions.forEach(q=>{
+    rows.push([q.team,q.member,q.qIndex+1,data.questionMaster[q.qIndex]||"",q.a,q.b,q.c,q.d,q.correct,q.note||""]);
+  });
+  downloadCSV("作成問題一覧.csv", rows);
+}
+function exportAnswersCSV(){
+  if(data.answers.length===0){ alert("回答履歴がありません"); return; }
+  const rows = [["試合名","問題番号","質問","出題チーム","対象メンバー","回答チーム","回答者","回答","正解","正誤"]];
+  data.answers.forEach(a=>{
+    const m = data.matches.find(x=>x.id===a.matchId);
+    const q = data.questions.find(x=>x.id===a.questionId);
+    rows.push([
+      m?.name||"",
+      q?(q.qIndex+1):"",
+      q?(data.questionMaster[q.qIndex]||""):"",
+      q?.team||"",
+      q?.member||"",
+      a.ansTeam, a.ansPlayer, a.answer, a.correct, a.result||""
+    ]);
+  });
+  downloadCSV("回答履歴.csv", rows);
+}
+function exportMatchScoresCSV(){
+  const rows = [["試合名","チームA","得点A","チームB","得点B","勝者"]];
+  data.matches.forEach(m=>{
+    const sa = getMatchScore(m.id, m.teamA);
+    const sb = getMatchScore(m.id, m.teamB);
+    let w = "";
+    if(sa>sb) w = m.teamA;
+    else if(sb>sa) w = m.teamB;
+    else if(sa+sb>0) w = "同点";
+    rows.push([m.name, m.teamA, sa, m.teamB, sb, w]);
+  });
+  downloadCSV("試合別得点.csv", rows);
+}
+function exportRankingCSV(){
+  const list = getRanking();
+  if(list.length===0){ alert("ランキングデータがありません"); return; }
+  const rows = [["順位","氏名","所属チーム","回答数","正解数","平均点","正解率(%)"]];
+  let prev=null, rank=0, shown=0;
+  list.forEach(p=>{
+    shown++;
+    const key=`${p.avg}_${p.correct}_${p.total}`;
+    if(key!==prev){ rank=shown; prev=key; }
+    rows.push([rank, p.name, p.team, p.total, p.correct, p.avg.toFixed(2), p.pct]);
+  });
+  downloadCSV("個人得点ランキング.csv", rows);
+}
+function exportMVPCSV(){
+  if(data.votes.length===0){ alert("投票履歴がありません"); return; }
+  const rows = [["投票者名","MVP候補者名","理由"]];
+  data.votes.forEach(v=>rows.push([v.voter, v.candidate, v.reason]));
+  downloadCSV("MVP投票結果.csv", rows);
+}
+
+/* ============================================================
+   リセット
+   ============================================================ */
+function resetAll(){
+  if(!confirm("本当に全データをリセットしますか？(初期状態に戻ります)")) return;
+  if(!confirm("もう一度確認します。本当によろしいですか？")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  data = structuredClone(DEFAULT_DATA);
+  saveData(); renderAll();
+}
+function resetAnswers(){
+  if(!confirm("回答履歴(チーム回答+個人回答)をすべて削除します。よろしいですか？")) return;
+  data.answers = [];
+  data.playerAnswers = [];
+  data.matches.forEach(m=>{ if(m.status!=="未開始") m.status="未開始"; });
+  saveData(); renderAll();
+}
+function resetVotes(){
+  if(!confirm("MVP投票をすべて削除します。よろしいですか？")) return;
+  data.votes = [];
+  saveData(); renderAll();
+}
+function resetQuestions(){
+  if(!confirm("作成済み問題をすべて削除します。試合の使用問題設定もクリアされます。よろしいですか？")) return;
+  data.questions = [];
+  data.matches.forEach(m=>{ m.questionIds = []; });
+  saveData(); renderAll();
+}
+
+/* ============================================================
+   全描画
+   ============================================================ */
+function renderAll(){
+  renderDashboard();
+  fillQuestionForm();
+  renderQMakeProgress();
+  renderQList();
+  renderPlayerAnswer();
+  renderMatches();
+  renderProjMatchSelect();
+  if(document.getElementById("projector").classList.contains("active")) renderProjector();
+  renderScoreboard();
+  renderRanking();
+  fillVoteSelects();
+  renderMVPArea();
+  renderAward();
+  renderTeamEditor();
+  renderPlayerEditor();
+  renderQMaster();
+  refreshPinDisplay();
+}
+
+/* ============================================================
+   起動 & ストレージ同期
+   ============================================================ */
+// 同じブラウザの別タブでの変更を受け取る(ローカル同期)
+window.addEventListener("storage", (e)=>{
+  if(e.key===STORAGE_KEY && !fb.connected){
+    data = loadData();
+    renderAll();
+  }
+});
+// 個人回答・投影モードでFirebase未接続時は、ローカルストレージのポーリング
+setInterval(()=>{
+  if(fb.connected) return; // Firebase接続中はそちらに任せる
+  if(isPlayer() || isProjector()){
+    try{
+      const fresh = loadData();
+      if(JSON.stringify(fresh) !== JSON.stringify(data)){
+        data = fresh;
+        renderAll();
+      }
+    }catch(e){}
+  }
+}, 2000);
+
+(async ()=>{
+  // Firebase設定があれば自動接続
+  await tryAutoConnectFirebase();
+  initRole();
+  renderAll();
+  applyFbStatusUI();
+})();
+</script>
+</body>
+</html>
